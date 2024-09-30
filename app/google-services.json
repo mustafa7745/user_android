@@ -1,0 +1,86 @@
+{
+  "project_info": {
+    "project_number": "591660974944",
+    "project_id": "greenland-aac8d",
+    "storage_bucket": "greenland-aac8d.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:591660974944:android:f6454f2c5dcd239ee15405",
+        "android_client_info": {
+          "package_name": "com.delivery.greenland_restaurant"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBeCN4zuMNcHhLrVJw12vX2J_hFIACQCbg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:591660974944:android:8c7dc7c40d126a30e15405",
+        "android_client_info": {
+          "package_name": "com.delivery.greenland_restaurant1"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBeCN4zuMNcHhLrVJw12vX2J_hFIACQCbg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:591660974944:android:124e398641944b90e15405",
+        "android_client_info": {
+          "package_name": "com.restaurant.greenland"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBeCN4zuMNcHhLrVJw12vX2J_hFIACQCbg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:591660974944:android:759878a5e5d47c81e15405",
+        "android_client_info": {
+          "package_name": "com.yemen_restaurant.greenland"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBeCN4zuMNcHhLrVJw12vX2J_hFIACQCbg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
