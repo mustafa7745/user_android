@@ -197,7 +197,8 @@ class CartActivity : ComponentActivity() {
                                                 }) {
                                                     Icon(
                                                         imageVector = Icons.Outlined.Delete,
-                                                        contentDescription = ""
+                                                        contentDescription = "",
+                                                        tint = Color.Red
                                                     )
                                                 }
                                             }
