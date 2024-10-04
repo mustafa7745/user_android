@@ -2,11 +2,13 @@ package com.yemen_restaurant.greenland.activities
 
 import android.annotation.SuppressLint
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -24,12 +26,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.android.play.core.review.ReviewManagerFactory
 import com.yemen_restaurant.greenland.MainCompose1
 import com.yemen_restaurant.greenland.models.OrderContentModel
 import com.yemen_restaurant.greenland.shared.MyJson
 import com.yemen_restaurant.greenland.shared.RequestServer
 import com.yemen_restaurant.greenland.shared.StateController
 import com.yemen_restaurant.greenland.shared.Urls
+import com.yemen_restaurant.greenland.storage.ReviewStorage
 import com.yemen_restaurant.greenland.ui.theme.GreenlandRestaurantTheme
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -40,8 +44,33 @@ class OrdersProductsActivity : ComponentActivity() {
     private lateinit var orderContents: OrderContentModel
     val stateController = StateController()
     private lateinit var orderId: String
+    val reviewStorage = ReviewStorage()
 
     val requestServer = RequestServer(this)
+    private fun requestInAppReview() {
+        val manager = ReviewManagerFactory.create(this)
+        manager.requestReviewFlow().addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                // We got the ReviewInfo object
+                val reviewInfo = task.result
+                if (reviewInfo != null) {
+                    val flow = manager.launchReviewFlow(this, reviewInfo)
+                    flow.addOnCompleteListener { _ ->
+                        // Mark that the review was requested
+                        reviewStorage.setReview()
+                    }
+                } else {
+                    // Handle the case where reviewInfo is null
+                    Log.e("InAppReview", "ReviewInfo is null")
+                }
+            } else {
+                // Handle the error case
+                Log.e("InAppReview", "Failed to get review flow: ${task.exception?.message}")
+            }
+        }
+    }
+
+
     private fun readOrderProducts() {
         stateController.isLoadingRead.value = true
         val data3 = buildJsonObject {
@@ -63,6 +92,7 @@ class OrdersProductsActivity : ComponentActivity() {
                         it
                     )
                 successState()
+
             } catch (e: Exception) {
                 errorState(e.message.toString())
             }
@@ -98,6 +128,13 @@ class OrdersProductsActivity : ComponentActivity() {
                 finish()
             }
             Toast.makeText(this, "تم ارسال الطلب بنجاح", Toast.LENGTH_SHORT).show()
+            if (!reviewStorage.isReview()){
+                reviewStorage.incrementCountOrder()
+                val orderCount = reviewStorage.getCountOrder()
+                if (orderCount > 10){
+                    requestInAppReview()
+                }
+            }
         } else if (str2 != null) {
             orderId = str2
             readOrderProducts()
@@ -261,7 +298,9 @@ class OrdersProductsActivity : ComponentActivity() {
                                             }
 
                                         }
-                                        Row(Modifier.background(Color.LightGray)) {
+                                        Row(Modifier.background(Color.LightGray).clickable {
+                                            requestInAppReview()
+                                        }) {
                                             TableCell(
                                                 text = "اجمالي الفاتورة",
                                                 weight = (column0Weight + column1Weight + column2Weight + column3Weight)

@@ -1,6 +1,5 @@
 package com.yemen_restaurant.greenland.activities
 
-import GetStorage
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
@@ -8,6 +7,8 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Easing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -66,26 +67,20 @@ import coil.compose.AsyncImage
 import com.yemen_restaurant.greenland.CustomImageView
 import com.yemen_restaurant.greenland.LoadingCompose
 import com.yemen_restaurant.greenland.R
-import com.yemen_restaurant.greenland.models.CategoryModel
-import com.yemen_restaurant.greenland.models.CategoryUDModel
 import com.yemen_restaurant.greenland.models.HomeComponent
-import com.yemen_restaurant.greenland.models.ProjectAdsModel
+import com.yemen_restaurant.greenland.models.User
 import com.yemen_restaurant.greenland.shared.CartController3
-import com.yemen_restaurant.greenland.shared.Login
 import com.yemen_restaurant.greenland.shared.MyJson
-import com.yemen_restaurant.greenland.shared.ProductCategoryDBController
 import com.yemen_restaurant.greenland.shared.RequestServer
+import com.yemen_restaurant.greenland.shared.SharedInAppUpdate
 import com.yemen_restaurant.greenland.shared.StateController
 import com.yemen_restaurant.greenland.shared.Urls
 import com.yemen_restaurant.greenland.storage.HomeComponentStorage
 import com.yemen_restaurant.greenland.storage.UserStorage
 import com.yemen_restaurant.greenland.ui.theme.GreenlandRestaurantTheme
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.put
 import okhttp3.MultipartBody
 import java.time.Duration
@@ -98,29 +93,25 @@ class DashboardActivity : ComponentActivity() {
     val stateController = StateController()
     val currenctDate: LocalDateTime = LocalDateTime.now()
     val homeComponentStorage = HomeComponentStorage()
+    val userName = mutableStateOf("")
+    val userStorage = UserStorage()
 
     val itemView = mutableStateOf(false)
     val itemType = mutableStateOf(0)
 
 
-    val categories = mutableStateOf<List<CategoryModel>>(listOf())
-    val projectAds = mutableStateOf<List<ProjectAdsModel>>(listOf())
-    val isLoading = mutableStateOf(false)
-    val isSuccess1 = mutableStateOf(false)
-    val isSuccess2 = mutableStateOf(false)
     val requestServer = RequestServer(this)
-    val catProController = ProductCategoryDBController(this)
 
-    val isError = mutableStateOf(false)
-    val error = mutableStateOf("")
+
+    private lateinit var updateName2ActivityResult: ActivityResultLauncher<Intent>
 
     private fun read() {
-        val userStorage = UserStorage()
+
         stateController.errorRead.value = ""
         stateController.isLoadingRead.value = true
         var data3: JsonObject
 
-        val userName = GetStorage("user").getData("name")
+//        val userName = GetStorage("user").getData("name")
 
         if (userStorage.isSetUser()) {
             data3 = buildJsonObject {
@@ -143,7 +134,7 @@ class DashboardActivity : ComponentActivity() {
         } else {
 
             data3 = buildJsonObject {
-                put("tag", "readWithUser")
+                put("tag", "readWithUser2")
             }
         }
         val body1 = MultipartBody.Builder().setType(MultipartBody.FORM)
@@ -160,14 +151,23 @@ class DashboardActivity : ComponentActivity() {
             try {
 
                 val data = MyJson.IgnoreUnknownKeys.decodeFromString<HomeComponent>(it)
+                Log.e("data",it.toString())
                 if (data.user != null) {
-                    userStorage.setUser(MyJson.MyJson.encodeToString(data.user))
+                    userStorage.setUser(MyJson.IgnoreUnknownKeys.encodeToString(data.user))
                 }else{
                     data.user = userStorage.getUser()
                 }
                 homeComponent = data
-                homeComponentStorage.setHomeComponent(MyJson.MyJson.encodeToString(data))
+                homeComponentStorage.setHomeComponent(MyJson.IgnoreUnknownKeys.encodeToString(data))
+
+
                 successState()
+
+                if (homeComponent.user!!.name2 == null){
+                    goToAddName()
+                }
+
+
             } catch (e: Exception) {
                 stateController.isLoadingRead.value = false
                 stateController.isErrorRead.value = true
@@ -182,140 +182,29 @@ class DashboardActivity : ComponentActivity() {
         stateController.isErrorRead.value = false
     }
 
-    //    private fun read() {
-//        error.value = ""
-//        isLoading.value = true
-//        val data3 =  buildJsonObject {
-//            put("tag", "read")
-//        }
-//
-//        val body1 = MultipartBody.Builder().setType(MultipartBody.FORM)
-//            .addFormDataPart("data3",data3.toString())
-//            .build()
-//
-////        Log.e("data2",requestServer.getData2().toString())
-//        Log.e("data3",data3.toString())
-//        requestServer.request2(body1, Urls.categoryUrl,{ code, fail ->
-//            isLoading.value = false
-//            isError.value = true
-//            error.value = code.toString()
-//        },{
-//            try {
-//                val categories =  MyJson.MyJson.decodeFromString<List<CategoryModel>>(it)
-//                Log.e("ddd", LocalDateTime.now().toString())
-//                catProController.setCategoryTime(LocalDateTime.now().toString())
-//                catProController.setCategories(categories)
-//                this@DashboardActivity.categories.value = categories
-//                isLoading.value = false
-//                isSuccess2.value = true
-//                Log.e("listt", categories.toString())
-//            }
-//            catch (e:Exception){
-//                isLoading.value = false
-//                isError.value = true
-//                error.value = e.message.toString()
-//            }
-//        })
-//    }
-    private fun checkChanges() {
-
-        val login = Login()
-        error.value = ""
-        isLoading.value = true
-        val data3 = buildJsonObject {
-            put("tag", "check")
-            put("inputProjectId", login.getProjectId())
-            put("ids", MyJson.MyJson.encodeToJsonElement(catProController.getCategoriesIds()))
-            put("fromDate", catProController.getCategoryTime())
-        }
-        Log.e("pid", login.getProjectId())
-
-        val body1 = MultipartBody.Builder().setType(MultipartBody.FORM)
-            .addFormDataPart("data3", data3.toString())
-            .build()
-
-        Log.e("data3", data3.toString())
-        GlobalScope.launch {
-            val response = requestServer.request(body1, Urls.categoryUrl)
-            if (requestServer.isHaveResponse(response)) {
-                when (requestServer.getRequestCode(response)) {
-                    200 -> {
-                        val data = requestServer.getResponseBody(response)
-                        try {
-                            val categoriesUD = MyJson.MyJson.decodeFromString<CategoryUDModel>(data)
-                            val cats = catProController.getCategories().toMutableList()
-                            if (categoriesUD.updated.isNotEmpty()) {
-                                categoriesUD.updated.forEach { c ->
-                                    val item = cats.find { it.id == c.id }
-                                    if (item != null) {
-                                        cats[cats.indexOf(item)] = c
-                                    } else {
-                                        cats.add(c)
-                                    }
-                                }
-                            }
-                            if (categoriesUD.deleted.isNotEmpty()) {
-                                categoriesUD.deleted.forEach { c ->
-                                    cats.remove(cats.find { it.id == c })
-                                }
-                            }
-
-                            Log.e("ddd", LocalDateTime.now().toString())
-                            catProController.setCategoryTime(LocalDateTime.now().toString())
-                            catProController.setCategories(cats)
-                            this@DashboardActivity.categories.value = cats
-                            isLoading.value = false
-                            isSuccess2.value = true
-                            Log.e("listt", categories.toString())
-
-                        } catch (e: Exception) {
-                            isLoading.value = false
-                            isError.value = true
-                            error.value = "not json"
-                            Log.e("Errorsuccess", data)
-
-                        }
-                    }
-
-                    400 -> {
-                        isLoading.value = false
-                        isError.value = true
-                        error.value = requestServer.getErrorMessage(response).message.en
-                        Log.e(
-                            "error",
-                            response.toString()
-                        )
-                        Log.e(
-                            "error",
-                            requestServer.getErrorMessage(response).message.ar
-                        )
-                    }
-
-                    else -> {
-                        isLoading.value = false
-                        isError.value = true
-                        error.value =
-                            "not 400 madry " + requestServer.getErrorMessage(response).message.en
-                        Log.e("errorr", response.toString())
-                    }
-                }
-            } else {
-                isLoading.value = false
-                isError.value = true
-                error.value = requestServer.getErrorMessage(response).message.en
-            }
-
-
-        }
-    }
-
-
-
-
 
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        SharedInAppUpdate(this).checkUpdate()
+        updateName2ActivityResult = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == RESULT_OK) {
+                val data: Intent? = result.data
+                val resultValue = data?.getStringExtra("user2")
+                // استخدام النتيجة كما تشاء
+                if (resultValue != null){
+                    val user =  MyJson.IgnoreUnknownKeys.decodeFromString<User>(resultValue)
+                    if (user.name2 != null){
+                        userName.value = user.name2.toString()
+                        userStorage.setUser(MyJson.IgnoreUnknownKeys.encodeToString(user))
+                        homeComponent.user?.name2 = user.name2
+                        homeComponentStorage.setHomeComponent(MyJson.IgnoreUnknownKeys.encodeToString(homeComponent))
+                    }
+                }
+
+            }
+        }
+
 
 
         if (homeComponentStorage.isSetHomeComponent()){
@@ -326,31 +215,12 @@ class DashboardActivity : ComponentActivity() {
             else{
                 homeComponent = homeComponentStorage.getHomeComponent()
                 successState()
-
             }
-
         }else{
             read()
         }
 
 
-//        if (catProController.isSetCategoryTime()){
-//            Log.e("lisstts ids",catProController.getCategoriesIds().toString())
-//            val date = LocalDateTime.parse(catProController.getCategoryTime())
-//            Log.e("dattt",date.toString())
-//            
-//            val diff = Duration.between(date,currenctDate).toMinutes()
-//            Log.e("diff",diff.toString())
-//            if (diff < 1){
-//                categories.value = catProController.getCategories()
-//                isSuccess2.value = true
-//            }
-//            else{
-//                checkChanges()
-//            }
-//        }else{
-//            read()
-//        }
         setContent {
             GreenlandRestaurantTheme {
                 val navController = rememberNavController()
@@ -413,10 +283,22 @@ class DashboardActivity : ComponentActivity() {
                             .size(50.dp)
                             .padding(10.dp), model = R.drawable.user, contentDescription = null
                     )
+                    userName.value = if (homeComponent.user!!.name2 != null)  homeComponent.user!!.name2.toString()
+                    else  homeComponent.user!!.name
 
-                    Text(modifier = Modifier.padding(3.dp), text = "مرحبا بك: ")
-                    Text(text = homeComponent.user!!.name)
+
+                    Text(
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis, modifier = Modifier  .padding(3.dp), text = "مرحبا بك: ${userName.value}"
+                    )
                 }
+                if (homeComponent.user!!.name2 == null)
+                Text("قم بتعيين الاسم الان", fontSize = 8.sp,  maxLines = 1,
+                    modifier = Modifier.padding(start = 10.dp).clickable {
+                        goToAddName()
+                    },
+                    color = Color.Blue,
+                    overflow = TextOverflow.Ellipsis,)
                 HorizontalDivider()
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(count), content = {
@@ -447,7 +329,10 @@ class DashboardActivity : ComponentActivity() {
                                     BadgedBox(
                                         modifier = Modifier.fillMaxWidth(),
                                         badge = {
-                                            Text(text = (cartController3.products.value.size + cartController3.offers.value.size).toString())
+                                            Text(
+                                                modifier = Modifier.background(MaterialTheme.colorScheme.primary).padding(3.dp),
+                                                color = Color.White,
+                                                text = (cartController3.products.value.size + cartController3.offers.value.size).toString())
                                         }) {
                                         Box(
                                             Modifier.align(Alignment.Center)
@@ -604,6 +489,11 @@ class DashboardActivity : ComponentActivity() {
             }
         }
         CategoriesComponents()
+    }
+
+    private fun goToAddName() {
+        val intent = Intent(this@DashboardActivity, AddNameActivity::class.java)
+        updateName2ActivityResult.launch(intent)
     }
 
     @Composable

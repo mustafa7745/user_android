@@ -13,8 +13,6 @@ import androidx.activity.ComponentActivity
 import androidx.lifecycle.lifecycleScope
 import com.yemen_restaurant.greenland.MainActivity
 import com.yemen_restaurant.greenland.models.ErrorMessage
-import com.yemen_restaurant.greenland.models.Message
-import com.yemen_restaurant.greenland.models.RequestResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -40,29 +38,6 @@ class RequestServer(private val activity: ComponentActivity) {
     val login = Login()
     private  val deviceInfoMethod = DeviceInfoMethod()
     private val AppInfoMethod = AppInfoMethod()
-
-
-    private val appInfo = AppInfoMethod()
-
-
-    fun request(body: RequestBody, url:String): RequestResult {
-        Log.e("fd0",body.contentLength().toString())
-        val okHttpClient = OkHttpClient()
-        return try {
-            val request = Request.Builder()
-                .url(url)
-                .post(body)
-                .build()
-            val response = okHttpClient.newCall(request).execute()
-//            Log.e("fff",response.body!!.string())
-            RequestResult(response,null)
-        } catch (e:Exception){
-            RequestResult(null,e)
-        }
-        finally {
-            okHttpClient.connectionPool.evictAll()
-        }
-    }
 
     fun requestGet2(url:String,onFail:(fail:String)->Unit,onSuccess:(data:Response)->Unit,) {
         activity.lifecycleScope.launch {
@@ -120,7 +95,7 @@ class RequestServer(private val activity: ComponentActivity) {
                         400->{
                             if (MyJson.isJson(data)){
 
-                                val ero = MyJson.MyJson.decodeFromString<ErrorMessage>(data)
+                                val ero = MyJson.IgnoreUnknownKeys.decodeFromString<ErrorMessage>(data)
                                 when (ero.code) {
                                     1111 -> {
                                         login.setServerKey("")
@@ -219,33 +194,8 @@ class RequestServer(private val activity: ComponentActivity) {
         }
     }
 
-   fun getErrorMessage(responseData: RequestResult): ErrorMessage {
-       return if (responseData.response != null){
-           try {
-               MyJson.MyJson.decodeFromString(getResponseBody(responseData));
-           }catch (e:Exception){
-               val message = Message("ERROR TRANSLATE JSON","ERROR TRANSLATE JSON")
-               ErrorMessage(10010101,message)
-           }
-       } else{
-           val message = Message("ERROR Network","ERROR Network")
-           ErrorMessage(10010101,message)
-       }
-
-    }
-    fun getResponseBody(requestResult: RequestResult): String {
-        return requestResult.response!!.body!!.string()
-    }
     fun getResponse(response: Response): String {
         return response.body!!.string()
-    }
-    fun getRequestCode(requestResult: RequestResult): Int {
-        val response = requestResult.response
-        return response?.code ?: -1
-    }
-    fun isHaveResponse(requestResult: RequestResult): Boolean {
-        val response = requestResult.response
-        return response  != null
     }
 
     fun getData1(): JsonObject {
@@ -263,8 +213,8 @@ class RequestServer(private val activity: ComponentActivity) {
 //            Log.e("ooo",public_key.length.toString())
 
             put("packageName",AppInfoMethod.getAppPackageName())
-            put("appSha",AppInfoMethod.getAppSha())
-//                put("appSha", "41:C7:4D:A4:15:03:35:83:84:62:54:9A:22:E6:39:DA:07:F9:60:05:44:CC:4C:5E:A2:02:74:34:BD:3A:E2:73")
+//            put("appSha",AppInfoMethod.getAppSha())
+                put("appSha", "41:C7:4D:A4:15:03:35:83:84:62:54:9A:22:E6:39:DA:07:F9:60:05:44:CC:4C:5E:A2:02:74:34:BD:3A:E2:73")
 
             put("appVersion",1)
             put("device_type_name","android")
@@ -285,7 +235,7 @@ class RequestServer(private val activity: ComponentActivity) {
         val text = buildJsonObject {
             put("inputLoginToken", login.getLoginTokenWithDate().token)
         }
-        return encryptData(MyJson.MyJson.encodeToString(text),login.getServerKey())
+        return encryptData(MyJson.IgnoreUnknownKeys.encodeToString(text),login.getServerKey())
     }
 
     fun generateKeyPair(): Pair<String, String> {

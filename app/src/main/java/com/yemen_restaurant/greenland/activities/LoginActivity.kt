@@ -37,6 +37,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -52,6 +54,7 @@ import com.yemen_restaurant.greenland.shared.CCompose
 import com.yemen_restaurant.greenland.shared.Login
 import com.yemen_restaurant.greenland.shared.MyJson
 import com.yemen_restaurant.greenland.shared.RequestServer
+import com.yemen_restaurant.greenland.shared.SharedInAppUpdate
 import com.yemen_restaurant.greenland.shared.Urls
 import com.yemen_restaurant.greenland.ui.theme.GreenlandRestaurantTheme
 import kotlinx.coroutines.GlobalScope
@@ -115,7 +118,7 @@ class LoginActivity : ComponentActivity() {
                 Log.e("erreerooor123", res)
                 var decryptResult: String = "";
                 try {
-                    val encryptedData = MyJson.MyJson.decodeFromString<EncryptedModel>(res)
+                    val encryptedData = MyJson.IgnoreUnknownKeys.decodeFromString<EncryptedModel>(res)
                     Log.e("erreerooor", encryptedData.encrypted_data)
                     decryptResult = requestServer.decryptData(
                         Base64.decode(
@@ -132,7 +135,7 @@ class LoginActivity : ComponentActivity() {
                 Log.e("erreer", decryptResult)
 
 
-                val token = MyJson.MyJson.decodeFromString<SuccessModel>(decryptResult)
+                val token = MyJson.IgnoreUnknownKeys.decodeFromString<SuccessModel>(decryptResult)
 
                 login.setLoginToken(MyJson.MyJson.encodeToString(token))
 
@@ -146,8 +149,8 @@ class LoginActivity : ComponentActivity() {
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
-
         super.onCreate(savedInstanceState)
+        SharedInAppUpdate(this).checkUpdate()
         setContent {
             GreenlandRestaurantTheme {
                 LoginScreen(
@@ -232,6 +235,7 @@ class LoginActivity : ComponentActivity() {
                         horizontalArrangement = Arrangement.Center
                     ){
                         OutlinedTextField(
+                            enabled = !isLoading.value,
                             value = password.value,
                             onValueChange = { password.value = it },
                             label = { Text(text = "الرقم السري") },
@@ -269,7 +273,9 @@ class LoginActivity : ComponentActivity() {
                                             .padding(5.dp)
                                             .fillMaxWidth()
                                     ) {
-                                        Text(text = "دخول")
+                                        Text(text = "دخول",fontFamily = FontFamily(
+                                            Font(R.font.bukra_bold))
+                                        )
                                     }
                                     // Error Message
 

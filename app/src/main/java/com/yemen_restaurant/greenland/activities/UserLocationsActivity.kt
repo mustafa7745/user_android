@@ -26,9 +26,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.yemen_restaurant.greenland.MainCompose1
+import com.yemen_restaurant.greenland.R
 import com.yemen_restaurant.greenland.models.UserLocationModel
 import com.yemen_restaurant.greenland.shared.MyJson
 import com.yemen_restaurant.greenland.shared.RequestServer
@@ -144,16 +147,26 @@ class UserLocationsActivity :
             GreenlandRestaurantTheme {
                 MainCompose1(padding = 0.dp, stateController = stateController, activity = this, read = { read() }) {
                     Button(
-                        modifier = Modifier.fillMaxWidth(),
                         onClick = {
                             val intent = Intent(
                                 this@UserLocationsActivity,
                                 AddLocationActivity::class.java
                             )
                             activityResultLauncher.launch(intent)
-                        }) {
-                        Text(text = "اضافة موقع")
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(5.dp)
+                            .height(50.dp),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(text = if (userLocations.value.isEmpty()) "اضافة موقع" else "اضافة موقع اخر" , fontFamily = FontFamily(
+                            Font(R.font.bukra_bold)
+                        )
+                        )
+
                     }
+
                     LazyVerticalGrid(
                         horizontalArrangement = Arrangement.Center,
                         modifier = Modifier.fillMaxWidth(),
@@ -218,7 +231,8 @@ class UserLocationsActivity :
                     },
                     modifier = Modifier.align(Alignment.End)
                 ) {
-                    Text(text = "اختر", color = Color.White)
+                    Text(text = "اختر", color = Color.White,fontFamily = FontFamily(
+                        Font(R.font.bukra_bold)))
                 }
             }
         }

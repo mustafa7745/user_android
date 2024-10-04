@@ -2,8 +2,10 @@ package com.yemen_restaurant.greenland.activities
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -11,7 +13,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,12 +25,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
@@ -35,6 +41,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -91,7 +99,9 @@ class CartActivity : ComponentActivity() {
                                     if (type.value == 1)
                                     Card {
                                         Column(
-                                            Modifier.fillMaxWidth().padding(5.dp),
+                                            Modifier
+                                                .fillMaxWidth()
+                                                .padding(5.dp),
                                             verticalArrangement = Arrangement.Center,
                                             horizontalAlignment = Alignment.CenterHorizontally
                                         ) {
@@ -101,35 +111,38 @@ class CartActivity : ComponentActivity() {
                                         HorizontalDivider()
                                         Row(
                                             Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.Center,
+                                            horizontalArrangement = Arrangement.SpaceBetween,
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            IconButton(onClick = {
-                                                cartController3.incrementProductQuantity(productInCart.productsModel.id)
-                                            }) {
-                                                Icon(
-                                                    imageVector = Icons.Outlined.Add,
-                                                    contentDescription = ""
-                                                )
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                IconButton(onClick = {
+                                                    cartController3.incrementProductQuantity(productInCart.productsModel.id)
+                                                }) {
+                                                    Icon(
+                                                        imageVector = Icons.Outlined.Add,
+                                                        contentDescription = ""
+                                                    )
+                                                }
+                                                Text(text = productInCart.productCount.value.toString())
+                                                IconButton(onClick = {
+
+
+                                                    cartController3.decrementProductQuantity(productInCart.productsModel.id)
+                                                }) {
+                                                    Icon(
+                                                        painter = painterResource(
+                                                            R.drawable.baseline_remove_24
+                                                        ),
+                                                        contentDescription = ""
+                                                    )
+
+                                                    //                                                                            Icon(imageVector = R.drawable.ic_launcher_background, contentDescription = "" )
+                                                }
                                             }
-                                            Text(text = productInCart.productCount.value.toString())
+
                                             IconButton(onClick = {
-
-
-                                                cartController3.decrementProductQuantity(productInCart.productsModel.id)
-                                            }) {
-                                                Icon(
-                                                    painter = painterResource(
-                                                        R.drawable.baseline_remove_24
-                                                    ),
-                                                    contentDescription = ""
-                                                )
-
-                                                //                                                                            Icon(imageVector = R.drawable.ic_launcher_background, contentDescription = "" )
-                                            }
-                                            IconButton(onClick = {
-
-
                                                 cartController3.removeProduct(productInCart.productsModel.id)
                                             }) {
                                                 Icon(
@@ -143,40 +156,44 @@ class CartActivity : ComponentActivity() {
                                     if (type.value == 2)
                                         Card {
                                             Text(text = offerInCart.offerModel.name)
-
                                             HorizontalDivider()
                                             Row(
                                                 Modifier.fillMaxWidth(),
-                                                horizontalArrangement = Arrangement.Center,
+                                                horizontalArrangement = Arrangement.SpaceBetween,
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
-                                                IconButton(onClick = {
-                                                    cartController3.incrementOfferQuantity(offerInCart.offerModel.id)
-                                                }) {
-                                                    Icon(
-                                                        imageVector = Icons.Outlined.Add,
-                                                        contentDescription = ""
-                                                    )
+                                                Row (
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ){
+                                                    IconButton(onClick = {
+                                                        cartController3.incrementOfferQuantity(offerInCart.offerModel.id)
+                                                    }) {
+                                                        Icon(
+                                                            imageVector = Icons.Outlined.Add,
+                                                            contentDescription = ""
+                                                        )
+                                                    }
+                                                    Text(text = offerInCart.offerCount.value.toString())
+                                                    IconButton(onClick = {
+
+
+                                                        cartController3.decrementOfferQuantity(offerInCart.offerModel.id)
+                                                    }) {
+                                                        Icon(
+                                                            painter = painterResource(
+                                                                R.drawable.baseline_remove_24
+                                                            ),
+                                                            contentDescription = ""
+                                                        )
+
+                                                        //                                                                            Icon(imageVector = R.drawable.ic_launcher_background, contentDescription = "" )
+                                                    }
                                                 }
-                                                Text(text = offerInCart.offerCount.value.toString())
+
                                                 IconButton(onClick = {
 
 
-                                                    cartController3.decrementProductQuantity(offerInCart.offerModel.id)
-                                                }) {
-                                                    Icon(
-                                                        painter = painterResource(
-                                                            R.drawable.baseline_remove_24
-                                                        ),
-                                                        contentDescription = ""
-                                                    )
-
-                                                    //                                                                            Icon(imageVector = R.drawable.ic_launcher_background, contentDescription = "" )
-                                                }
-                                                IconButton(onClick = {
-
-
-                                                    cartController3.removeProduct(productInCart.productsModel.id)
+                                                    cartController3.removeOffer(productInCart.productsModel.id)
                                                 }) {
                                                     Icon(
                                                         imageVector = Icons.Outlined.Delete,
@@ -189,8 +206,6 @@ class CartActivity : ComponentActivity() {
                         }
                     }
                 }
-
-
             }
         }
     }
@@ -225,18 +240,63 @@ class CartActivity : ComponentActivity() {
                         style = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold)
                     )
                 }
+
                 HorizontalDivider(Modifier.padding(10.dp))
-                if (locationModel.value.isNotEmpty()) {
-                    Column(
-                        modifier = Modifier.fillMaxWidth()
+                Text(
+                    text = "يتم احتساب سعر التوصيل بعد تأكيد الطلب", // Replace with actual location data
+                    style = TextStyle(fontSize = 12.sp),
+                    color = Color.Red,
+                    modifier = Modifier
+                        .padding(bottom = 5.dp)
+                )
+                if (locationModel.value.isEmpty()){
+                    Button(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        onClick = {
+                            chooseLocation()
+                        }
                     ) {
                         Text(
-                            text = "موقع التوصيل",
-                            fontSize = 18.sp,
-                            color = Color.DarkGray,
+                            text = "اختيار موقع التوصيل", fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(vertical = 4.dp)
+                            fontFamily = FontFamily(
+                                Font(R.font.bukra_bold))
                         )
+                    }
+                }else{
+                    Button(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        onClick = { confirmOrder() }
+                    ) {
+                        Text(
+                            text = "تأكيد الطلب", fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily(
+                                Font(R.font.bukra_bold))
+                        )
+                    }
+                }
+            }
+        }
+
+
+        val column0Weight = 0.07f // 30%
+        val column1Weight = 0.44f // 30%
+        val column2Weight = 0.12f // 70%
+        val column3Weight = 0.15f // 30%
+        val column4Weight = 0.22f // 70%
+
+
+
+        HorizontalDivider()
+        LazyColumn(content = {
+            if (locationModel.value.isNotEmpty())
+                item {
+                    CardView(title = "موقع التوصيل") {
                         Text(
                             text = locationData.street, // Replace with actual location data
                             style = TextStyle(fontSize = 16.sp),
@@ -252,74 +312,134 @@ class CartActivity : ComponentActivity() {
                             style = TextStyle(fontSize = 16.sp),
                             modifier = Modifier.padding(bottom = 5.dp)
                         )
+                        Card (
+                            Modifier
+                                .background(Color.White)
+                                .clickable { chooseLocation() },
+                        ){
+                            Box (
+                                Modifier
+                                    .fillMaxSize()
+                                    .background(Color.White)){
+                                Text(
+                                    modifier = Modifier.padding(1.dp),
+
+                                    text = "تغيير العنوان",
+                                    fontSize = 12.sp,
+                                    color = Color.Blue,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+//                    Column(
+//                        modifier = Modifier.fillMaxWidth()
+//                    ) {
+//
+//
+//                        Text(
+//                            text = "طريقة الدفع:", // Replace with actual location data
+//                            style = TextStyle(fontSize = 12.sp),
+//                            color = Color.Red,
+//                            modifier = Modifier
+//                                .padding(bottom = 5.dp)
+//                        )
+//                        Text(
+//                            text = "الدفع عند التسليم", // Replace with actual location data
+//                            style = TextStyle(fontSize = 12.sp),
+//                            color = Color.Red,
+//                            modifier = Modifier
+//                                .padding(bottom = 5.dp)
+//                        )
+//                        Text(
+//                            text = "الدفع الالكتروني؟ تواصل معنا"  , // Replace with actual location data
+//                            style = TextStyle(fontSize = 12.sp),
+//                            color = Color.Red,
+//                            modifier = Modifier
+//                                .padding(bottom = 5.dp)
+//                        )
+//                        Button(
+//                            modifier = Modifier
+//                                .fillMaxWidth()
+//                                .padding(vertical = 8.dp),
+//                            onClick = { confirmOrder() }
+//                        ) {
+//                            Text(
+//                                text = "تأكيد الطلب", fontSize = 20.sp,
+//                                fontWeight = FontWeight.Bold,
+//                                fontFamily = FontFamily(
+//                                    Font(R.font.bukra_bold))
+//                            )
+//                        }
+//                    }
+                }
+            item{
+                CardView("طريقة الدفع"){
+                    Row (
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(5.dp),
+                        horizontalArrangement = Arrangement.Start,
+                     verticalAlignment = Alignment.CenterVertically,
+                    ){
+                        Icon(
+                        tint = MaterialTheme.colorScheme.primary,
+                        imageVector = Icons.Outlined.CheckCircle,
+                        contentDescription = ""
+                    )
                         Text(
-                            text = "تغيير العنوان", // Replace with actual location data
-                            style = TextStyle(fontSize = 12.sp),
-                            color = Color.Blue,
-                            modifier = Modifier
-                                .padding(bottom = 5.dp)
-                                .clickable {
-                                    chooseLocation()
-                                }
+                            modifier = Modifier.padding(vertical = 8.dp),
+                            text = "الدفع عند الاستلام",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
                         )
-                        HorizontalDivider(Modifier.padding(10.dp))
-                        Text(
-                            text = "يتم احتساب سعر التوصيل بعد تأكيد الطلب", // Replace with actual location data
-                            style = TextStyle(fontSize = 12.sp),
-                            color = Color.Red,
-                            modifier = Modifier
-                                .padding(bottom = 5.dp)
-                        )
-                        Button(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 8.dp),
-                            onClick = { confirmOrder() }
-                        ) {
+
+                    }
+                    Row (
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(5.dp),
+                        horizontalArrangement = Arrangement.Start,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ){
+
+                    }
+
+                    Card (
+                        Modifier
+                            .background(Color.White)
+                            .clickable {
+                                intentFunWhatsapp()
+                            },
+                    ){
+                        Box (
+                            Modifier
+                                .fillMaxSize()
+                                .background(Color.White)){
                             Text(
-                                text = "تأكيد الطلب", fontSize = 20.sp,
+                                modifier = Modifier.padding(1.dp),
+
+                                text = "الدفع الالكتروني؟ تواصل معنا",
+                                fontSize = 12.sp,
+                                color = Color.Blue,
                                 fontWeight = FontWeight.Bold
                             )
                         }
+
                     }
+
                 }
-
-
-
-
-                if (locationModel.value.isEmpty())
-                    Button(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp),
-                        onClick = {
-                            chooseLocation()
-                        }
-                    ) {
-                        Text(
-                            text = "اختيار موقع التوصيل", fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-
+            }
+            item{
+                Text(modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(5.dp),text = "للتعديل او الحذف اضغط على المنتج", fontSize = 8.sp,
+                    color =   Color.Blue
+                )
             }
 
-        }
-        Text(modifier = Modifier.fillMaxWidth().padding(5.dp),text = "للتعديل او الحذف اضغط على المنتج", fontSize = 8.sp,
-            color =   Color.Blue
-        )
-
-        val column0Weight = 0.07f // 30%
-        val column1Weight = 0.44f // 30%
-        val column2Weight = 0.12f // 70%
-        val column3Weight = 0.15f // 30%
-        val column4Weight = 0.22f // 70%
 
 
-
-        HorizontalDivider()
-        LazyColumn(content = {
-            // Header row
             item {
                 Row(Modifier.background(Color.Gray)) {
 
@@ -331,7 +451,6 @@ class CartActivity : ComponentActivity() {
 
                 }
             }
-
             itemsIndexed(cart.products.value) { index, s ->
                 Row(
                     Modifier
@@ -397,6 +516,38 @@ class CartActivity : ComponentActivity() {
 
 
         )
+    }
+
+    @Composable
+    private fun CardView(title:String, content: @Composable() (ColumnScope.() -> Unit)) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+        ) {
+            Column(
+                horizontalAlignment = Alignment.Start,
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ){
+                    Text(
+                        text = title,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                HorizontalDivider(Modifier.padding(10.dp))
+                content()
+            }
+        }
     }
 
     private fun chooseLocation() {
@@ -506,5 +657,27 @@ class CartActivity : ComponentActivity() {
             overflow = TextOverflow.Ellipsis,
             maxLines = 1
         )
+    }
+    private fun intentFunWhatsapp(): Boolean {
+        val formattedNumber = "967780222271"
+        val message = "السلام عليكم"
+
+        // Create the URI for the WhatsApp link
+        val uri =
+            "https://api.whatsapp.com/send?phone=$formattedNumber&text=${Uri.encode(message)}"
+
+        // Create an Intent to open the WhatsApp application
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            data = Uri.parse(uri)
+            putExtra(Intent.EXTRA_TEXT, message)
+        }
+        try {
+            startActivity(intent)
+            return true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Toast.makeText(this, "يجب تثبيت الواتس اولا", Toast.LENGTH_LONG).show()
+            return false
+        }
     }
 }

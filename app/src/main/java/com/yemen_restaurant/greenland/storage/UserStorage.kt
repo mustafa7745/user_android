@@ -10,14 +10,21 @@ class UserStorage {
     val userKey = "user"
     val userLocationKey = "userLocation"
     fun isSetUser():Boolean{
-       return getStorage.getData(userKey).isNotEmpty()
+        try {
+            getUser()
+            return true
+        }catch (e:Exception){
+            setUser("")
+            return false
+        }
     }
     fun setUser(user:String){
         getStorage.setData(userKey,user)
     }
     fun getUser():User{
-//        Log.e("grgr",MyJson.IgnoreUnknownKeys.decodeFromString(getStorage.getData(userKey)))
-       return MyJson.IgnoreUnknownKeys.decodeFromString(getStorage.getData(userKey))
+        return MyJson.IgnoreUnknownKeys.decodeFromString(getStorage.getData(userKey))
+
+
     }
     //
     fun isSetUserLocation():Boolean{

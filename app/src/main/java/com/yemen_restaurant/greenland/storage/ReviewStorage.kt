@@ -1,28 +1,43 @@
 package com.yemen_restaurant.greenland.storage
 
 import GetStorage
-import com.yemen_restaurant.greenland.models.HomeComponent
-import com.yemen_restaurant.greenland.shared.MyJson
-import java.time.LocalDateTime
 
-class HomeComponentStorage {
-    private val getStorage = GetStorage("homeComponent")
-    private val homeComponentKey = "homeComponentKey"
-    private val dateKey = "dateKey"
+class ReviewStorage {
+    private val getStorage = GetStorage("review")
+    private val isReview = "isReview"
+    private val orderCount = "orderCount"
 
-    fun isSetHomeComponent():Boolean{
-       return getStorage.getData(homeComponentKey).isNotEmpty()
+    fun isReview():Boolean{
+       return getStorage.getData(isReview).isNotEmpty()
     }
-    fun setHomeComponent(data:String){
-        val currentDate: LocalDateTime = LocalDateTime.now()
-        getStorage.setData(dateKey,currentDate.toString())
-        getStorage.setData(homeComponentKey,data)
+    fun setReview(){
+        getStorage.setData(isReview,"yes")
     }
 
-    fun getDate(): LocalDateTime? {
-       return (LocalDateTime.parse(getStorage.getData(dateKey)))
+    fun incrementCountOrder():String{
+        var count = getStorage.getData(orderCount)
+        if (count.isEmpty()){
+            count = "1"
+        }
+        else{
+            var countInt = count.toInt()
+            countInt++;
+            count = countInt.toString();
+        }
+
+        getStorage.setData(orderCount,count)
+        return count
     }
-    fun getHomeComponent():HomeComponent{
-       return MyJson.IgnoreUnknownKeys.decodeFromString(getStorage.getData(homeComponentKey))
+    fun getCountOrder():Int{
+        var count = getStorage.getData(orderCount)
+        if (count.isEmpty()){
+            count = "1"
+        }
+        else{
+            var countInt = count.toInt()
+            countInt++;
+            count = countInt.toString();
+        }
+        return count.toInt()
     }
 }

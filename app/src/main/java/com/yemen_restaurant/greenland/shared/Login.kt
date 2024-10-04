@@ -18,7 +18,7 @@ class Login {
         return getStorage.getData(token)
     }
     fun getLoginTokenWithDate(): SuccessModel {
-        return MyJson.MyJson.decodeFromString(getLoginToken())
+        return MyJson.IgnoreUnknownKeys.decodeFromString(getLoginToken())
     }
 
     fun isSetLoginToken(): Boolean {

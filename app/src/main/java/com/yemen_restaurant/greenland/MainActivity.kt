@@ -9,9 +9,6 @@ import android.util.Base64
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.IntentSenderRequest
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -32,13 +29,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
-import com.google.android.gms.tasks.Task
-import com.google.android.play.core.appupdate.AppUpdateInfo
-import com.google.android.play.core.appupdate.AppUpdateManager
-import com.google.android.play.core.appupdate.AppUpdateManagerFactory
-import com.google.android.play.core.appupdate.AppUpdateOptions
-import com.google.android.play.core.install.model.AppUpdateType
-import com.google.android.play.core.install.model.UpdateAvailability
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.messaging.ktx.messaging
 import com.yemen_restaurant.greenland.activities.DashboardActivity
@@ -59,14 +49,7 @@ import java.time.LocalDateTime
 
 class MainActivity : ComponentActivity() {
     private val stateController = StateController()
-    private lateinit var appUpdateManager: AppUpdateManager
-    private lateinit var appUpdateInfoTask: Task<AppUpdateInfo>
-    private lateinit var updateLauncher: ActivityResultLauncher<IntentSenderRequest>
-    val isThereUpdate = mutableStateOf(false)
-
     private val isSuccessToken = mutableStateOf(false)
-
-
     private val tokenVM: TokenVM by viewModels()
     val requestServer = RequestServer(this)
     private lateinit var body: MultipartBody
@@ -74,27 +57,17 @@ class MainActivity : ComponentActivity() {
     @SuppressLint("CoroutineCreationDuringComposition")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        splashScreen.
-        val str1 = intent.getStringExtra("refreshToken")
-        if (str1 != null) {
-            stateController.isLoadingRead.value = true
-            refreshLoginToken()
-        } else {
-            checkUpdate()
-            getTokenFirebase()
-        }
-
-
+        checkEnterTypeAndProcess()
 
         setContent {
             GreenlandRestaurantTheme {
+
                 MainCompose1(
                     padding = 0.dp,
                     stateController = stateController,
                     activity = this,
                     read = {
                         if (isSuccessToken.value) {
-
                             finalInit()
                         } else {
                             getTokenFirebase()
@@ -106,40 +79,15 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    //
-    private fun checkUpdate() {
-        appUpdateManager = AppUpdateManagerFactory.create(this)
-        appUpdateInfoTask = appUpdateManager.appUpdateInfo
-        updateLauncher =
-            registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
-                if (result.resultCode != RESULT_OK) {
-                    // Handle if the update failed or was canceled
-                    Toast.makeText(this, "Update failed or canceled", Toast.LENGTH_SHORT).show()
-                }
-            }
-
-        // Checks that the platform will allow the specified type of update.
-        appUpdateInfoTask.addOnSuccessListener { appUpdateInfo ->
-            if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE
-                // This example applies an immediate update. To apply a flexible update
-                // instead, pass in AppUpdateType.FLEXIBLE
-                && appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.IMMEDIATE)
-            ) {
-                appUpdateManager.startUpdateFlowForResult(
-                    // Pass the intent that is returned by 'getAppUpdateInfo()'.
-                    appUpdateInfo,
-                    // an activity result launcher registered via registerForActivityResult
-                    updateLauncher,
-                    // Or pass 'AppUpdateType.FLEXIBLE' to newBuilder() for
-                    // flexible updates.
-                    AppUpdateOptions.newBuilder(AppUpdateType.IMMEDIATE).build()
-                )
-                isThereUpdate.value = true
-            }
+    private fun checkEnterTypeAndProcess() {
+        val str1 = intent.getStringExtra("refreshToken")
+        if (str1 != null) {
+            stateController.isLoadingRead.value = true
+            refreshLoginToken()
+        } else {
+            getTokenFirebase()
         }
     }
-
-
     private fun getTokenFirebase() {
             stateController.isLoadingRead.value = true
             tokenVM.check({
@@ -178,25 +126,17 @@ class MainActivity : ComponentActivity() {
             errorState(it)
         }) {
             val projectId =
-                MyJson.MyJson.decodeFromString<Success2Model>(it)
+                MyJson.IgnoreUnknownKeys.decodeFromString<Success2Model>(it)
             Firebase.messaging.subscribeToTopic(projectId.success)
                 .addOnCompleteListener { task ->
                     if (!task.isSuccessful) {
                         errorState("Error register FB")
                     } else {
                         requestServer.login.setProjectId(projectId.success)
-                        val intent = Intent(
-                            this@MainActivity,
-                            LoginActivity::class.java
-                        )
-                        intent.flags =
-                            Intent.FLAG_ACTIVITY_CLEAR_TOP
-                        startActivity(intent)
-                        finalFinish()
+                        goToLogin()
                     }
                 }
         }
-
     }
 
     private fun refreshLoginToken() {
@@ -223,10 +163,7 @@ class MainActivity : ComponentActivity() {
 
             val token = MyJson.MyJson.decodeFromString<SuccessModel>(decryptResult)
             requestServer.login.setLoginToken(MyJson.MyJson.encodeToString(token))
-            val intent = Intent(this@MainActivity, DashboardActivity::class.java)
-            intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
-            startActivity(intent)
-            finalFinish()
+            gotoDashboard()
         }
 
     }
@@ -241,33 +178,43 @@ class MainActivity : ComponentActivity() {
         if (!requestServer.login.isSetProjectId()) {
             initDeviceInServer()
         } else {
-            if (requestServer.login.isSetLoginToken()) {
-                val tokenInfo = requestServer.login.getLoginTokenWithDate();
-                val tokenDateExpireAt =
-                    (LocalDateTime.parse(tokenInfo.expire_at.replace("\\s".toRegex(), "T")))
-                if (tokenDateExpireAt.isBefore(LocalDateTime.now())) {
-                    refreshLoginToken()
-                } else {
-                    val intent =
-                        Intent(this@MainActivity, DashboardActivity::class.java)
-                    intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
-                    startActivity(intent)
-                    finalFinish()
-                }
-            } else {
-                val intent =
-                    Intent(this@MainActivity, LoginActivity::class.java)
-                intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
-                startActivity(intent)
-                finalFinish()
-            }
+            checkTokenStateAndProcess()
         }
     }
 
-    private fun finalFinish() {
-        if (!isThereUpdate.value){
-            finish()
+    private fun checkTokenStateAndProcess() {
+        if (requestServer.login.isSetLoginToken()) {
+            val tokenInfo = requestServer.login.getLoginTokenWithDate();
+            val tokenDateExpireAt =
+                (LocalDateTime.parse(tokenInfo.expire_at.replace("\\s".toRegex(), "T")))
+            if (tokenDateExpireAt.isBefore(LocalDateTime.now())) {
+                refreshLoginToken()
+            } else {
+                gotoDashboard()
+            }
+        } else {
+            goToLogin()
         }
+    }
+
+    private fun goToLogin() {
+        val intent =
+            Intent(this@MainActivity, LoginActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
+        startActivity(intent)
+        finalFinish()
+    }
+
+    private fun gotoDashboard() {
+                val intent =
+                    Intent(this@MainActivity, DashboardActivity::class.java)
+                intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
+                startActivity(intent)
+                finalFinish()
+    }
+
+    private fun finalFinish() {
+            finish()
     }
 
     private fun finalInit() {

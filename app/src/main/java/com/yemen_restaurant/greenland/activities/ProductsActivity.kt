@@ -67,11 +67,9 @@ import com.yemen_restaurant.greenland.models.ProductUDModel
 import com.yemen_restaurant.greenland.shared.CartController3
 import com.yemen_restaurant.greenland.shared.Login
 import com.yemen_restaurant.greenland.shared.MyJson
-import com.yemen_restaurant.greenland.shared.ProductCategoryDBController
 import com.yemen_restaurant.greenland.shared.RequestServer
 import com.yemen_restaurant.greenland.shared.StateController
 import com.yemen_restaurant.greenland.shared.Urls
-//import com.yemen_restaurant.greenland.storage.ProductsStorage
 import com.yemen_restaurant.greenland.storage.ProductsStorage
 import com.yemen_restaurant.greenland.ui.theme.GreenlandRestaurantTheme
 import kotlinx.coroutines.GlobalScope
@@ -91,24 +89,9 @@ class ProductsActivity : ComponentActivity() {
     lateinit var productsStorage : ProductsStorage
     val currenctDate: LocalDateTime = LocalDateTime.now()
 
-    val isLoading = mutableStateOf(false)
-    val isSuccess = mutableStateOf(false)
-    val isSuccessReadMore = mutableStateOf(false)
-    val isLoadingReadMore = mutableStateOf(false)
-    val isHaveReadMore = mutableStateOf(false)
-    val isError = mutableStateOf(false)
-    val isErrorReadMore = mutableStateOf(false)
-    val isRefreshing = mutableStateOf(false)
-    val error = mutableStateOf("")
-    val errorReadMore = mutableStateOf("")
     lateinit var category_id: String;
     val requestServer = RequestServer(this)
 
-    //    val currencyController = CurrencyController()
-//    val currencyPrice = currencyController.getCurrencyModel().currency_price.toDouble()
-    val catProController = ProductCategoryDBController(this)
-
-    val login = Login();
 
 
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -128,7 +111,6 @@ class ProductsActivity : ComponentActivity() {
             if (productsDB.isNotEmpty()){
                 val date = productsStorage.getTimeWhenStoredByCategoryId(category_id).first()
 
-                Log.e("ffdate",date)
                 val fdate = LocalDateTime.parse(date)
                 val diff = Duration.between(fdate,currenctDate).toMinutes()
                 if (diff>1){
@@ -136,7 +118,6 @@ class ProductsActivity : ComponentActivity() {
                     read()
                 }
                 else{
-                    Log.e("pppp",productsDB.toString())
                     products.value = productsDB
                     successState()
                 }
@@ -177,53 +158,6 @@ class ProductsActivity : ComponentActivity() {
     }
 
 
-
-    private fun processRead() {
-        if (catProController.isSetProductTime(category_id)) {
-            Log.e("lisstts ids", catProController.getProductsIds(category_id).toString())
-            Log.e("lisstts ids", catProController.getProductTime(category_id))
-            val date = LocalDateTime.parse(catProController.getProductTime(category_id))
-            Log.e("dattt", date.toString())
-            val currenctDate = LocalDateTime.now()
-            val diff = Duration.between(date, currenctDate).toMinutes()
-            Log.e("diff", diff.toString())
-            if (diff < 1) {
-                products.value = catProController.getProducts(category_id)
-                isSuccess.value = true
-            } else {
-                checkChanges()
-            }
-        } else {
-            read()
-        }
-    }
-
-    @Composable
-    private fun readMoreProcess() {
-        Column {
-            if (isHaveReadMore.value)
-                if (!isLoadingReadMore.value)
-                    Button(onClick = { }) {
-                        Text(text = "read more")
-                    }
-            if (isLoadingReadMore.value)
-                CircularProgressIndicator()
-            if (isErrorReadMore.value) {
-
-                Text(text = errorReadMore.value)
-                Button(onClick = {
-//                    readMoreProducts()
-
-                }
-                ) {
-                    Text(text = "retry")
-                }
-            }
-        }
-
-    }
-
-
     val isShow = mutableStateOf(false)
     lateinit var groupId: String
 
@@ -251,7 +185,6 @@ class ProductsActivity : ComponentActivity() {
 
                 lifecycleScope.launch {
                     products.value = MyJson.IgnoreUnknownKeys.decodeFromString(it)
-                    Log.e("pppww",products.value.toString())
                     products.value.forEach {
                         productsStorage.addProduct(it)
                     }
@@ -273,108 +206,6 @@ class ProductsActivity : ComponentActivity() {
         stateController.isErrorRead.value = false
     }
 
-    private fun checkChanges() {
-
-        val login = Login()
-        error.value = ""
-        isLoading.value = true
-        val data3 = buildJsonObject {
-            put("tag", "check")
-            put("inputProjectId", login.getProjectId())
-            put("inputCategoryId", category_id)
-            put(
-                "ids",
-                MyJson.MyJson.encodeToJsonElement(catProController.getProductsIds(category_id))
-            )
-            put("fromDate", catProController.getProductTime(category_id))
-        }
-        Log.e("pid", login.getProjectId())
-
-        val body1 = MultipartBody.Builder().setType(MultipartBody.FORM)
-            .addFormDataPart("data3", data3.toString())
-            .build()
-
-        Log.e("data3", data3.toString())
-        GlobalScope.launch {
-            val response = requestServer.request(body1, Urls.productsUrl)
-            if (requestServer.isHaveResponse(response)) {
-                when (requestServer.getRequestCode(response)) {
-                    200 -> {
-                        val data = requestServer.getResponseBody(response)
-                        try {
-                            val productsUD =
-                                MyJson.IgnoreUnknownKeys.decodeFromString<ProductUDModel>(data)
-                            val productss =
-                                catProController.getProducts(category_id).toMutableList()
-                            Log.e("pppp", productss.toString())
-                            Log.e("pppp", productsUD.toString())
-                            if (productsUD.updated.isNotEmpty()) {
-                                productsUD.updated.forEach { c ->
-                                    val item = productss.find { it.id == c.id }
-                                    if (item != null) {
-                                        productss[productss.indexOf(item)] = c
-                                    } else {
-                                        productss.add(c)
-                                    }
-                                }
-                            }
-                            //
-                            if (productsUD.deleted.isNotEmpty()) {
-                                productsUD.deleted.forEach { c ->
-                                    productss.remove(productss.find { it.id == c })
-                                }
-                            }
-
-                            Log.e("ddd", LocalDateTime.now().toString())
-                            catProController.setProductTime(
-                                category_id,
-                                LocalDateTime.now().toString()
-                            )
-                            catProController.setProducts(category_id, productss)
-                            this@ProductsActivity.products.value = productss
-                            isLoading.value = false
-                            isSuccess.value = true
-
-                        } catch (e: Exception) {
-                            isLoading.value = false
-                            isError.value = true
-                            error.value = "not json"
-                            Log.e("Errorsuccess", data)
-
-                        }
-                    }
-
-                    400 -> {
-                        isLoading.value = false
-                        isError.value = true
-                        error.value = requestServer.getErrorMessage(response).message.en
-                        Log.e(
-                            "error",
-                            response.toString()
-                        )
-                        Log.e(
-                            "error",
-                            requestServer.getErrorMessage(response).message.ar
-                        )
-                    }
-
-                    else -> {
-                        isLoading.value = false
-                        isError.value = true
-                        error.value =
-                            "not 400 madry " + requestServer.getErrorMessage(response).message.en
-                        Log.e("errorr", response.toString())
-                    }
-                }
-            } else {
-                isLoading.value = false
-                isError.value = true
-                error.value = requestServer.getErrorMessage(response).message.en
-            }
-
-
-        }
-    }
 
     @OptIn(ExperimentalFoundationApi::class)
     @Composable

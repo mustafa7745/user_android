@@ -39,6 +39,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -55,6 +57,7 @@ import com.google.android.gms.location.LocationSettingsResponse
 import com.google.android.gms.location.SettingsClient
 import com.google.android.gms.tasks.Task
 import com.yemen_restaurant.greenland.MainCompose2
+import com.yemen_restaurant.greenland.R
 import com.yemen_restaurant.greenland.models.UserLocationModel
 import com.yemen_restaurant.greenland.shared.MyJson
 import com.yemen_restaurant.greenland.shared.RequestServer
@@ -157,7 +160,8 @@ private fun add() {
                             Button(onClick = {
                                 requestEnableGPS()
                             }) {
-                                Text(text = "تفعيل الموقع")
+                                Text(text = "تفعيل الموقع",fontFamily = FontFamily(
+                                    Font(R.font.bukra_bold)))
                             }
                         } else {
                             LaunchedEffect(null){
@@ -167,7 +171,10 @@ private fun add() {
                                 Button(onClick = {
                                     getLocation()
                                 }) {
-                                    Text(text = "تأكيد الموقع")
+                                    Text(text = "تأكيد الموقع",fontFamily = FontFamily(
+                                        Font(R.font.bukra_bold)
+                                    )
+                                    )
                                 }
                             }else{
                                 MainCompose2(padding = 0.dp, stateController =stateController , activity = this@AddLocationActivity ) {
@@ -192,7 +199,8 @@ private fun add() {
                         Button(onClick = {
                             checkIsPermissionGranted()
                         }) {
-                            Text(text = "طلب الوصول الى الموقع")
+                            Text(text = "طلب الوصول الى الموقع",fontFamily = FontFamily(
+                                Font(R.font.bukra_bold)))
                         }
                     }
                 }
@@ -309,7 +317,8 @@ private fun add() {
                     .height(50.dp),
                 shape = RoundedCornerShape(8.dp)
             ) {
-                Text(text = "حفظ", color = Color.White, fontSize = 18.sp)
+                Text(text = "حفظ", color = Color.White, fontSize = 18.sp,fontFamily = FontFamily(
+                    Font(R.font.bukra_bold)))
             }
         }
     }

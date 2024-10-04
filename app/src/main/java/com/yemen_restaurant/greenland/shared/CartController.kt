@@ -1,6 +1,5 @@
 package com.yemen_restaurant.greenland.shared
 
-import GetStorage
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import com.yemen_restaurant.greenland.models.OfferModel
@@ -11,94 +10,6 @@ import com.yemen_restaurant.greenland.models.OrderContentOffersModel
 import com.yemen_restaurant.greenland.models.OrderContentProductsModel
 import com.yemen_restaurant.greenland.models.ProductModel
 import kotlinx.serialization.Serializable
-
-
-@Serializable
-data class Cart (
-    val productsModel: ProductModel,
-    var product_count:MutableState<Int>
-        )
-
-class CartController {
-    val name = "ids"
-    val cartList = mutableStateOf<List<Cart>>(emptyList())
-    private var getStorage :GetStorage = GetStorage("cart_list")
-//    private  val _cartList :MutableStateFlow<List<Cart>> = MutableStateFlow(mutableListOf())
-//    val cartList :StateFlow<List<Cart>>  = _cartList.asStateFlow()
-    init {
-        initCart()
-    }
-
-
-
-    fun initCart(){
-        clearCart()
-//        cartList.value = getCart()
-    }
-
-   private fun  getCart(): List<Cart> {
-       val data = getStorage.getData(name)
-       if (data == ""){
-           return listOf<Cart>()
-       }
-       return MyJson.MyJson.decodeFromString(data)
-    }
-
-     fun addToCart(item: ProductModel){
-         val foundItem = cartList.value.find { it.productsModel == item }
-         if (foundItem == null){
-
-             cartList.value = cartList.value + Cart(item, mutableStateOf(1))
-//             getStorage.setData(name,MyJson.MyJson.encodeToString(cartList.value))
-         }
-
-
-    }
-    fun increaseProductCountInCart(item: ProductModel){
-
-        val foundItem = cartList.value.find { it.productsModel == item }
-        //
-        if (foundItem != null){
-            val index = cartList.value.indexOf(foundItem)
-            cartList.value[index].product_count.value++
-//            getStorage.setData(name,MyJson.MyJson.encodeToString(cartList.value))
-        }
-    }
-    fun decreaseProductCountInCart(item: ProductModel){
-
-        val foundItem = cartList.value.find { it.productsModel == item }
-        //
-        if (foundItem != null){
-            if (foundItem.product_count.value > 1){
-                val index = cartList.value.indexOf(foundItem)
-                cartList.value[index].product_count.value--
-//                getStorage.setData(name,MyJson.MyJson.encodeToString(cartList.value))
-            }
-        }
-    }
-
-    fun deleteItem(item: ProductModel){
-        val foundItem = cartList.value.find { it.productsModel == item }
-        //
-        if (foundItem != null){
-            cartList.value = cartList.value - foundItem
-//            getStorage.setData(name,MyJson.MyJson.encodeToString(cartList.value))
-        }
-    }
-    fun clearCart(){
-        cartList.value = emptyList()
-    }
-
-    fun getSumAll(): Double {
-        var sum = 0.0
-        cartList.value.forEach {
-            sum = sum + (it.product_count.value *  it.productsModel.postPrice.toDouble())
-        }
-        return sum;
-    }
-
-
-}
 
 
 data class ProductInCart (

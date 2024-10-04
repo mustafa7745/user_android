@@ -28,8 +28,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.yemen_restaurant.greenland.MainCompose1
+import com.yemen_restaurant.greenland.R
 import com.yemen_restaurant.greenland.models.OrderModel
 import com.yemen_restaurant.greenland.shared.MyJson
 import com.yemen_restaurant.greenland.shared.RequestServer
@@ -139,7 +142,10 @@ class OrdersActivity : ComponentActivity() {
                                                         startActivity(intent)
 //                                                            finish()
                                                     }) {
-                                                        Text(text = "عرض منتجات الطلب")
+                                                        Text(text = "عرض منتجات الطلب",fontFamily = FontFamily(
+                                                            Font(R.font.bukra_bold)
+                                                        )
+                                                        )
                                                     }
                                                     HorizontalDivider()
                                                     if (s.situationId != SharedOrderStatus.ORDER_COMPLETED && s.situationId != SharedOrderStatus.ORDER_CENCELED) {
