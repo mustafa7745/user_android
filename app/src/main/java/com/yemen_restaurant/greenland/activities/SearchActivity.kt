@@ -24,14 +24,9 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -41,9 +36,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -68,7 +63,6 @@ class SearchActivity : ComponentActivity() {
     val stateController = StateController()
     private val requestServer = RequestServer(this)
     private val searchText = mutableStateOf("")
-    private val isSearched = mutableStateOf(false)
     val products = mutableStateOf<List<ProductModel>>(listOf())
     val isShow = mutableStateOf(false)
     lateinit var groupId:String
@@ -178,11 +172,12 @@ class SearchActivity : ComponentActivity() {
                         ) {
                             Text(
                                 modifier = Modifier.padding(2.dp),
+                                textAlign = TextAlign.Center,
                                 text = s.name,
-                                fontSize = 12.sp,
-                                color = Color.Black,
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.primary,
                                 overflow = TextOverflow.Ellipsis,
-                                maxLines = 1
+                                maxLines = 2
                             )
                             Row(
                                 Modifier
@@ -191,7 +186,7 @@ class SearchActivity : ComponentActivity() {
                                 horizontalArrangement = Arrangement.Center,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(text = s.postPrice + " ريال ", fontSize = 14.sp, color = Color.Black)
+                                Text(text = formatPrice(s.postPrice)  + " ريال ", fontSize = 14.sp, color = Color.Black)
                                 if (s.products_groupsName != "الرئيسية")
                                     Column(
                                         Modifier
@@ -278,63 +273,7 @@ class SearchActivity : ComponentActivity() {
                                 } else {
                                     val foundItem =
                                         cart.products.value.find { it.productsModel == s }
-                                    if (foundItem == null) {
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxSize()
-                                                .background(Color.White)
-                                                .clickable {
-                                                    cartController3.addProduct((s))
-                                                },
-                                            contentAlignment = Alignment.Center,
-                                        )
-
-                                        {
-                                            Text(text = "اضافة الى السلة", fontSize = 12.sp)
-                                        }
-                                    } else {
-                                        Row(
-                                            Modifier
-                                                .fillMaxWidth()
-                                                .background(Color.White),
-                                            horizontalArrangement = Arrangement.Center,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            IconButton(onClick = {
-                                                cartController3.incrementProductQuantity(s.id)
-                                            }) {
-                                                Icon(
-                                                    imageVector = Icons.Outlined.Add,
-                                                    contentDescription = ""
-                                                )
-                                            }
-                                            Text(text = foundItem.productCount.value.toString())
-                                            IconButton(onClick = {
-
-
-                                                cartController3.decrementProductQuantity(s.id)
-                                            }) {
-                                                Icon(
-                                                    painter = painterResource(
-                                                        R.drawable.baseline_remove_24
-                                                    ),
-                                                    contentDescription = ""
-                                                )
-
-                                                //                                                                            Icon(imageVector = R.drawable.ic_launcher_background, contentDescription = "" )
-                                            }
-                                            IconButton(onClick = {
-
-
-                                                cartController3.removeProduct(s.id)
-                                            }) {
-                                                Icon(
-                                                    imageVector = Icons.Outlined.Delete,
-                                                    contentDescription = ""
-                                                )
-                                            }
-                                        }
-                                    }
+                                   AddToCartUi(foundItem = foundItem, s =s )
                                 }
                             }
 
@@ -405,21 +344,7 @@ class SearchActivity : ComponentActivity() {
 
                             ) {
                                 Column {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(30.dp)
-                                            .background(MaterialTheme.colorScheme.primary),
-                                    ) {
-                                        Row(
-                                            Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.Center,
-                                        ) {
-                                            Text(text = "السعر: ")
-                                            Text(text = s1.postPrice)
-
-                                        }
-                                    }
+                                   NamePriceModal(s1 = s1)
 
                                     val pagerState =
                                         rememberPagerState(pageCount = { s1.productImages.size })
@@ -463,32 +388,6 @@ class SearchActivity : ComponentActivity() {
 
                                         horizontalAlignment = Alignment.CenterHorizontally
                                     ) {
-//                                        LazyRow(
-//                                            Modifier
-//                                                .fillMaxWidth()
-//                                                .padding(5.dp),
-//                                            horizontalArrangement = Arrangement.Center,
-//                                            content = {
-//                                                items(s1.productImages.size) {
-//
-//
-//                                                    if (pagerState.currentPage == it)
-//                                                        Icon(
-//                                                            modifier = Modifier.size(10.dp),
-//                                                            painter = painterResource(R.drawable.baseline_filled_circle_24),
-//                                                            contentDescription = "",
-//                                                            tint = MaterialTheme.colorScheme.background
-//                                                        )
-//                                                    else {
-//                                                        Icon(
-//                                                            modifier = Modifier.size(10.dp),
-//                                                            painter = painterResource(R.drawable.outline_circle_24),
-//                                                            contentDescription = "",
-//                                                            tint = MaterialTheme.colorScheme.background
-//                                                        )
-//                                                    }
-//                                                }
-//                                            })
                                         HorizontalDivider(
                                             Modifier.padding(5.dp)
                                         )
@@ -516,350 +415,38 @@ class SearchActivity : ComponentActivity() {
                                             } else {
                                                 val foundItem =
                                                     cart.products.value.find { it.productsModel == s1 }
-                                                if (foundItem == null) {
-                                                    Box(
-                                                        modifier = Modifier
-                                                            .fillMaxSize()
-                                                            .background(Color.White)
-                                                            .padding(5.dp)
-                                                            .clickable {
-                                                                cartController3.addProduct((s1))
-                                                            },
-                                                        contentAlignment = Alignment.Center,
-                                                    )
-
-                                                    {
-                                                        Text(
-                                                            text = "اضافة الى السلة",
-                                                            fontSize = 12.sp
-                                                        )
-                                                    }
-                                                } else {
-                                                    Row(
-                                                        Modifier.fillMaxWidth(),
-                                                        horizontalArrangement = Arrangement.Center,
-                                                        verticalAlignment = Alignment.CenterVertically
-                                                    ) {
-                                                        IconButton(onClick = {
-                                                            cartController3.incrementProductQuantity(
-                                                                s1.id
-                                                            )
-                                                        }) {
-                                                            Icon(
-                                                                imageVector = Icons.Outlined.Add,
-                                                                contentDescription = ""
-                                                            )
-                                                        }
-                                                        Text(text = foundItem.productCount.value.toString())
-                                                        IconButton(onClick = {
-
-
-                                                            cartController3.decrementProductQuantity(
-                                                                s1.id
-                                                            )
-                                                        }) {
-                                                            Icon(
-                                                                painter = painterResource(
-                                                                    R.drawable.baseline_remove_24
-                                                                ),
-                                                                contentDescription = ""
-                                                            )
-
-                                                            //                                                                            Icon(imageVector = R.drawable.ic_launcher_background, contentDescription = "" )
-                                                        }
-                                                        IconButton(onClick = {
-
-
-                                                            cartController3.removeProduct(s1.id)
-                                                        }) {
-                                                            Icon(
-                                                                imageVector = Icons.Outlined.Delete,
-                                                                contentDescription = ""
-                                                            )
-                                                        }
-                                                    }
-                                                }
+                                                AddToCartUi(foundItem = foundItem, s =s1 )
                                             }
-//                                            val foundItem = cart.products.value .find { it.productsModel == s1 }
-//                                            if (foundItem == null)
-//                                                Box(modifier = Modifier
-//                                                    .fillMaxSize()
-//                                                    .clickable {
-//                                                        cartController3.addProduct(s1)
-//                                                    } ,contentAlignment = Alignment.Center,)
-//
-//                                                {
-//                                                    Text(text = "اضافة الى السلة", fontSize = 12.sp)
-//                                                }
-//                                            else{
-//                                                Row(
-//                                                    Modifier.fillMaxWidth(),
-//                                                    horizontalArrangement = Arrangement.Center,
-//                                                    verticalAlignment = Alignment.CenterVertically
-//                                                ) {
-//                                                    IconButton(onClick = {
-//                                                        cartController3.incrementProductQuantity(s1.id)
-//                                                    }) {
-//                                                        Icon(
-//                                                            imageVector = Icons.Outlined.Add,
-//                                                            contentDescription = ""
-//                                                        )
-//                                                    }
-//                                                    Text(text = foundItem.productCount.value.toString())
-//                                                    IconButton(onClick = {
-//
-//
-//                                                        cartController3.decrementProductQuantity(s1.id)
-//                                                    }) {
-//                                                        Icon(
-//                                                            painter = painterResource(
-//                                                                R.drawable.baseline_remove_24
-//                                                            ),
-//                                                            contentDescription = ""
-//                                                        )
-//
-//                                                        //                                                                            Icon(imageVector = R.drawable.ic_launcher_background, contentDescription = "" )
-//                                                    }
-//                                                    IconButton(onClick = {
-//
-//
-//                                                        cartController3.removeProduct(s1.id)
-//                                                    }) {
-//                                                        Icon(
-//                                                            imageVector = Icons.Outlined.Delete,
-//                                                            contentDescription = ""
-//                                                        )
-//                                                    }
-//                                                }
-//                                            }
-
                                         }
                                         HorizontalDivider(Modifier.padding(5.dp))
-                                        Text(
-                                            modifier = Modifier.padding(5.dp),
-                                            text = s1.name,
-                                            fontSize = 12.sp,
-                                            color = MaterialTheme.colorScheme.secondary,
-                                            overflow = TextOverflow.Ellipsis,
-                                            maxLines = 1
-                                        )
                                     }
                                 }
-
                             }
-//                            Card(
-//                                Modifier.padding(5.dp)
-//                            ) {
-//
-//                                if (s1.productImages.isEmpty()) {
-//
-//                                    Card(
-//                                        Modifier
-//                                            .fillMaxSize()
-//                                            .height(200.dp)
-//                                            .padding(5.dp),
-//                                        colors = CardColors(
-//                                            containerColor = Color.White,
-//                                            contentColor = Color.Black,
-//                                            disabledContainerColor = Color.Blue,
-//                                            disabledContentColor = Color.Cyan
-//                                        )
-//                                    ) {
-//                                        Text(text = "لا يوجد صور")
-//                                    }
-//
-//                                } else {
-//                                    val pagerState =
-//                                        rememberPagerState(
-//                                            pageCount = { s1.productImages.size })
-//                                    HorizontalPager(
-//                                        pagerState,
-//                                        modifier = Modifier
-//                                            .fillMaxWidth()
-//                                            .height(200.dp),
-//                                    ) { i ->
-//                                        Card(
-//                                            Modifier
-//                                                .fillMaxSize()
-//                                                .padding(5.dp),
-//                                            colors = CardColors(
-//                                                containerColor = Color.White,
-//                                                contentColor = Color.Black,
-//                                                disabledContainerColor = Color.Blue,
-//                                                disabledContentColor = Color.Cyan
-//                                            )
-//                                        ) {
-//                                            Column(
-//                                                Modifier.fillMaxSize(),
-//                                                verticalArrangement = Arrangement.Center,
-//                                                horizontalAlignment = Alignment.CenterHorizontally
-//
-//                                            ) {
-//                                                AsyncImage(
-//                                                    modifier = Modifier.padding(
-//                                                        10.dp
-//                                                    ),
-//                                                    model = s1.productImages[i].image,
-//                                                    contentDescription = ""
-//                                                )
-//                                            }
-//                                        }
-//                                    }
-//                                    LazyRow(
-//                                        Modifier.fillMaxWidth(),
-//                                        horizontalArrangement = Arrangement.Center,
-//
-//                                        content = {
-//                                            items(s1.productImages.size) {
-//                                                if (pagerState.currentPage == it)
-//                                                    Icon(
-//                                                        painter = painterResource(
-//                                                            R.drawable.baseline_filled_circle_24
-//                                                        ),
-//                                                        contentDescription = "",
-//                                                        tint = MaterialTheme.colorScheme.primary
-//                                                    )
-//                                                else {
-//                                                    Icon(
-//                                                        painter = painterResource(
-//                                                            R.drawable.outline_circle_24
-//                                                        ),
-//                                                        contentDescription = "",
-//                                                        tint = MaterialTheme.colorScheme.primary
-//                                                    )
-//                                                }
-//                                            }
-//                                        })
-//                                }
-//
-//
-//
-//                                HorizontalDivider()
-//                                Column(
-//                                    verticalArrangement = Arrangement.Center
-//                                ) {
-//                                    Row(
-//                                        Modifier.fillMaxWidth(),
-//                                        horizontalArrangement = Arrangement.SpaceBetween,
-//                                    ) {
-//                                        Text(text = s1.name)
-//                                    }
-//
-//
-//                                    val foundItem1 =
-//                                        cart.find { it.productsModel == s1 }
-//                                    if (foundItem1 != null) {
-//
-//                                        Card(
-//                                            Modifier.fillMaxWidth()
-//                                        ) {
-//                                            Row(
-//                                                Modifier.fillMaxWidth(),
-//                                                horizontalArrangement = Arrangement.Center,
-//                                                verticalAlignment = Alignment.CenterVertically
-//                                            ) {
-//                                                IconButton(
-//                                                    onClick = {
-//                                                        cartController.increaseProductCountInCart(
-//                                                            s1
-//                                                        )
-//                                                    }) {
-//                                                    Icon(
-//                                                        imageVector = Icons.Outlined.Add,
-//                                                        contentDescription = ""
-//                                                    )
-//                                                }
-//                                                Text(text = foundItem1.product_count.value.toString())
-//                                                IconButton(
-//                                                    onClick = {
-//
-//
-//                                                        cartController.decreaseProductCountInCart(
-//                                                            s1
-//                                                        )
-//                                                    }) {
-//                                                    Icon(
-//                                                        painter = painterResource(
-//                                                            R.drawable.baseline_remove_24
-//                                                        ),
-//                                                        contentDescription = ""
-//                                                    )
-//
-//    //                                                                            Icon(imageVector = R.drawable.ic_launcher_background, contentDescription = "" )
-//                                                }
-//                                                IconButton(
-//                                                    onClick = {
-//
-//
-//                                                        cartController.deleteItem(
-//                                                            s1
-//                                                        )
-//                                                    }) {
-//                                                    Icon(
-//                                                        imageVector = Icons.Outlined.Delete,
-//                                                        contentDescription = ""
-//                                                    )
-//                                                }
-//                                            }
-//                                        }
-//
-//
-//                                    } else {
-//                                        Button(
-//                                            onClick = {
-//                                                cartController.addToCart(
-//                                                    s1
-//                                                )
-//                                            }) {
-//                                            Text(text = "اضافة الى السلة")
-//                                        }
-//
-//                                    }
-//
-//                                }
-//
-//
-//                            }
                         }
                     }
                 }
             )
-
         }
     }
 
     private fun search() {
-        stateController.isErrorAUD.value = false
-        stateController.isLoadingAUD.value = true
-        stateController.errorAUD.value = ""
+        stateController.startAud()
         val data3 = buildJsonObject {
             put("tag", "search")
             put("inputProductName", searchText.value)
         }
         val body1 = MultipartBody.Builder().setType(MultipartBody.FORM)
-            .addFormDataPart("data1", requestServer.getData1().toString())
-            .addFormDataPart("data2", requestServer.getData2())
+//            .addFormDataPart("data1", requestServer.getData1().toString())
+//            .addFormDataPart("data2", requestServer.getData2())
             .addFormDataPart("data3", data3.toString())
             .build()
 
         requestServer.request2(body1, Urls.productsUrl, { code, it ->
 
-            stateController.isLoadingAUD.value = false
-            stateController.isErrorAUD.value = true
-            stateController.errorAUD.value = it
+          stateController.errorStateAUD(it)
         }) {
-            try {
-                stateController.isLoadingAUD.value = false
+            stateController.successStateAUD()
                 products.value =  MyJson.IgnoreUnknownKeys.decodeFromString(it)
-            } catch (e: Exception) {
-                stateController.isLoadingAUD.value = false
-                stateController.isErrorAUD.value = true
-                stateController.errorAUD.value = e.message.toString()
-
-            }
         }
-
-
     }
-
 }

@@ -29,7 +29,7 @@ class Urls {
         val usersUrl = base + "users/index.php"
         val projectAdsUrl = base + "project_ads/index.php"
         val userLocationUrl = base + "users_locations/index.php"
-
+            val locationTypesUrl = base + "location_types/index.php"
     }
 
 }

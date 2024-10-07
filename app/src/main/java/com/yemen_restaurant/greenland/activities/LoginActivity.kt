@@ -86,8 +86,8 @@ class LoginActivity : ComponentActivity() {
         GlobalScope.launch {
 
             val text = buildJsonObject {
-                put("inputUserPhone", phone.value)
-                put("inputUserPassword", password.value)
+                put("inputUserPhone",  phone.value.trim())
+                put("inputUserPassword", password.value.trim())
             }
             var encryptedUserData = requestServer.encryptData(
                 MyJson.MyJson.encodeToString(text),
@@ -268,7 +268,7 @@ class LoginActivity : ComponentActivity() {
                                     }
                                     Button(
                                         onClick = login,
-                                        enabled = isValidPhone  && password.value.length > 4,
+                                        enabled = isValidPhone  && password.value.length in 4..8,
                                         modifier = Modifier
                                             .padding(5.dp)
                                             .fillMaxWidth()

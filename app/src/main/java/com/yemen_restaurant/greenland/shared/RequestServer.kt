@@ -72,63 +72,68 @@ class RequestServer(private val activity: ComponentActivity) {
                     if (!isInternetAvailable()) {
                         onFail(0, "لايوجد اتصال بالانترنت")
                     }
+                    else{
 
-                    val request = Request.Builder()
-                        .url(url)
-                        .post(body)
-                        .build()
-                    val response = okHttpClient.newCall(request).execute()
-                    val data = response.body!!.string()
-                    Log.e("dataa",data)
-                    Log.e("dataaUrl",url)
+                        val request = Request.Builder()
+                            .url(url)
+                            .post(body)
+                            .build()
+                        val response = okHttpClient.newCall(request).execute()
+                        val data = response.body!!.string()
+                        Log.e("dataa",data)
+                        Log.e("dataaUrl",url)
 
-                    when(response.code){
-                        200->{
-                            if (MyJson.isJson(data)){
+                        when(response.code){
+                            200->{
+                                if (MyJson.isJson(data)){
 
-                                onSuccess(data)
-                            }
-                            else{
-                                onFail(response.code,"not json")
-                            }
-                        }
-                        400->{
-                            if (MyJson.isJson(data)){
-
-                                val ero = MyJson.IgnoreUnknownKeys.decodeFromString<ErrorMessage>(data)
-                                when (ero.code) {
-                                    1111 -> {
-                                        login.setServerKey("")
-                                        val intent = Intent(activity, MainActivity::class.java)
-                                        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
-                                        activity.startActivity(intent)
-                                        activity.finish()
-                                    }
-                                    5001 -> {
-                                        val intent = Intent(activity, MainActivity::class.java)
-                                        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
-                                        intent.putExtra("refreshToken", 1)
-                                        activity.startActivity(intent)
-                                        activity.finish()
-                                    }
-                                    5002 -> {
-                                        val intent = Intent(activity, MainActivity::class.java)
-                                        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
-                                        login.setLoginToken("")
-                                        activity.startActivity(intent)
-                                        activity.finish()
-                                    }
+                                    onSuccess(data)
                                 }
-                                onFail(ero.code,ero.message.ar)
+                                else{
+                                    onFail(response.code,"not json")
+                                }
                             }
-                            else{
-                                onFail(response.code,"not json E")
+                            400->{
+                                if (MyJson.isJson(data)){
+
+                                    val ero = MyJson.IgnoreUnknownKeys.decodeFromString<ErrorMessage>(data)
+                                    when (ero.code) {
+                                        1111 -> {
+                                            login.setServerKey("")
+                                            val intent = Intent(activity, MainActivity::class.java)
+                                            intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
+                                            activity.startActivity(intent)
+                                            activity.finish()
+                                        }
+                                        5001 -> {
+                                            val intent = Intent(activity, MainActivity::class.java)
+                                            intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
+                                            intent.putExtra("refreshToken", 1)
+                                            activity.startActivity(intent)
+                                            activity.finish()
+                                        }
+                                        5002 -> {
+                                            val intent = Intent(activity, MainActivity::class.java)
+                                            intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
+                                            login.setLoginToken("")
+                                            activity.startActivity(intent)
+                                            activity.finish()
+                                        }
+                                    }
+                                    onFail(ero.code,ero.message.ar)
+                                }
+                                else{
+                                    onFail(response.code,"not json E")
+                                }
                             }
-                        }
-                        else->{
-                            onFail(response.code,response.code.toString())
+                            else->{
+                                onFail(response.code,response.code.toString())
+                            }
                         }
                     }
+
+
+
                 } catch (e:Exception){
 //                onFail(0,e.message.toString())
                     val errorMessage = when (e) {

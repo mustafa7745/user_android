@@ -38,6 +38,7 @@ import com.yemen_restaurant.greenland.ui.theme.GreenlandRestaurantTheme
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import okhttp3.MultipartBody
+import kotlin.math.roundToInt
 
 
 class OrdersProductsActivity : ComponentActivity() {
@@ -72,7 +73,7 @@ class OrdersProductsActivity : ComponentActivity() {
 
 
     private fun readOrderProducts() {
-        stateController.isLoadingRead.value = true
+        stateController.startRead()
         val data3 = buildJsonObject {
             put("tag", "readOrderProducts")
             put("inputOrderId", orderId)
@@ -84,32 +85,17 @@ class OrdersProductsActivity : ComponentActivity() {
             .build()
 
         requestServer.request2(body1, Urls.ordersUrl,{ _, it->
-            errorState(it)
+            stateController.errorStateRead(it)
         }){
-            try {
                 orderContents =
                     MyJson.IgnoreUnknownKeys.decodeFromString(
                         it
                     )
-                successState()
-
-            } catch (e: Exception) {
-                errorState(e.message.toString())
-            }
+                stateController.successState()
         }
     }
 
-    private fun errorState(e:String) {
-        stateController.isLoadingRead.value = false
-        stateController.isErrorRead.value = true
-        stateController.errorRead.value = e
-    }
 
-    private fun successState() {
-        stateController.isLoadingRead.value = false
-        stateController.isSuccessRead.value = true
-        stateController.isErrorRead.value = false
-    }
 
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -119,7 +105,7 @@ class OrdersProductsActivity : ComponentActivity() {
         val str2 = intent.getStringExtra("order_id")
         if (str1 != null) {
             orderContents = MyJson.IgnoreUnknownKeys.decodeFromString(str1)
-            successState()
+            stateController.successState()
             if (orderContents.products.isNotEmpty()) {
                 orderId = orderContents.products.first().orderId
             } else if (orderContents.offers.isNotEmpty()) {
@@ -203,11 +189,11 @@ class OrdersProductsActivity : ComponentActivity() {
                                                 weight = column2Weight
                                             )
                                             TableCell(
-                                                text = s.productPrice,
+                                                text = formatPrice(s.productPrice),
                                                 weight = column3Weight
                                             )
                                             TableCell(
-                                                text = (s.productPrice.toInt() * s.productQuantity.toInt()).toString(),
+                                                text = formatPrice ((s.productPrice.toDouble() * s.productQuantity.toInt()).toString()),
                                                 weight = column4Weight
                                             )
                                         }
@@ -227,11 +213,11 @@ class OrdersProductsActivity : ComponentActivity() {
                                                 weight = column2Weight
                                             )
                                             TableCell(
-                                                text = s.offerPrice,
+                                                text = formatPrice(s.offerPrice),
                                                 weight = column3Weight
                                             )
                                             TableCell(
-                                                text = (s.offerPrice.toInt() * s.offerQuantity.toInt()).toString(),
+                                                text = formatPrice((s.offerPrice.toDouble() * s.offerQuantity.toInt()).toString()),
                                                 weight = column4Weight
                                             )
                                         }
@@ -307,44 +293,39 @@ class OrdersProductsActivity : ComponentActivity() {
                                             )
 
                                             TableCell(
-                                                text = getAllFinalPrice().toString(),
+                                                text = roundToNearestFifty(getAllFinalPrice().roundToInt()) .toString(),
                                                 weight = column4Weight
                                             )
 
                                         }
                                     }
-
-
                                 }
-
                                 )
                             }
 
                     },
-
                     )
-
             }
         }
     }
 
-    private fun getProductsFinalPrice(): Int {
+    private fun getProductsFinalPrice(): Double {
         return orderContents.products.sumOf {
-            it.productPrice.toInt() * it.productQuantity.toInt()
+            it.productPrice.toDouble() * it.productQuantity.toInt()
         }
     }
 
-    private fun getOffersFinalPrice(): Int {
+    private fun getOffersFinalPrice(): Double {
         return orderContents.offers.sumOf {
-            it.offerPrice.toInt() * it.offerQuantity.toInt()
+            it.offerPrice.toDouble() * it.offerQuantity.toInt()
         }
     }
 
-    private fun getAllFinalPrice(): Int {
+    private fun getAllFinalPrice(): Double {
         var sum = getProductsFinalPrice() + getOffersFinalPrice()
 
         orderContents.delivery?.let {
-            sum += it.price.toInt()
+            sum += it.price.toDouble()
         }
 
         orderContents.discount?.let {
@@ -353,7 +334,7 @@ class OrdersProductsActivity : ComponentActivity() {
                 "0" -> { // Percentage discount
                     val discount = (sum * amount.toInt()) / 100
                     sum -= discount
-                    sum = 50 * Math.round((sum / 50).toDouble()).toInt()
+                    sum = 50 * Math.round((sum / 50).toDouble()).toDouble()
                     println("Discount: $discount")
                 }
 
@@ -383,4 +364,8 @@ class OrdersProductsActivity : ComponentActivity() {
             maxLines = 1
         )
     }
+}
+
+fun roundToNearestFifty(value: Int): Int {
+    return ((value + 25) / 50) * 50
 }

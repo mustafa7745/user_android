@@ -1,28 +1,28 @@
 package com.yemen_restaurant.greenland.storage
 
 import GetStorage
-import com.yemen_restaurant.greenland.models.HomeComponent
-import com.yemen_restaurant.greenland.shared.MyJson
+import com.yemen_restaurant.greenland.activities.formatPrice
 import java.time.LocalDateTime
 
-class HomeComponentStorage {
-    private val getStorage = GetStorage("homeComponent")
-    private val homeComponentKey = "homeComponentKey"
+class DeliveryPriceStorage {
+    private val getStorage = GetStorage("delivery")
+    private val deliveryPrice = "deliveryPrice"
     private val dateKey = "dateKey"
 
-    fun isSetHomeComponent():Boolean{
-       return getStorage.getData(homeComponentKey).isNotEmpty()
+    fun isSetDeliveryPrice():Boolean{
+       return getStorage.getData(deliveryPrice).isNotEmpty()
     }
-    fun setHomeComponent(data:String){
+    fun setDeliveryPrice(data:String){
         val currentDate: LocalDateTime = LocalDateTime.now()
         getStorage.setData(dateKey,currentDate.toString())
-        getStorage.setData(homeComponentKey,data)
+        getStorage.setData(deliveryPrice,data)
     }
 
     fun getDate(): LocalDateTime? {
        return (LocalDateTime.parse(getStorage.getData(dateKey)))
     }
-    fun getHomeComponent():HomeComponent{
-       return MyJson.IgnoreUnknownKeys.decodeFromString(getStorage.getData(homeComponentKey))
+    fun getDeliveryPrice():String{
+       val price = getStorage.getData(deliveryPrice);
+        return formatPrice(price)
     }
 }

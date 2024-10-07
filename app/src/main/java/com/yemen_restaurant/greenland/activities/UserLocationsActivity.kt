@@ -51,93 +51,7 @@ class UserLocationsActivity :
     val userLocations = mutableStateOf<List<UserLocationModel>>(listOf())
     val stateController = StateController()
     val requestServer = RequestServer(this)
-    private fun read() {
-        stateController.isLoadingRead.value = true
-        var data3 =   buildJsonObject {
-            put("tag", "read")
-        }
-        val body1 = MultipartBody.Builder().setType(MultipartBody.FORM)
-            .addFormDataPart("data1", requestServer.getData1().toString())
-            .addFormDataPart("data2", requestServer.getData2())
-            .addFormDataPart("data3", data3.toString())
-            .build()
 
-        requestServer.request2(body1, Urls.userLocationUrl,{ code, it->
-            stateController.isLoadingRead.value= false
-            stateController.isErrorRead.value = true
-            stateController.errorRead.value = it
-        }){
-            try {
-                userLocations.value =
-                    MyJson.IgnoreUnknownKeys.decodeFromString<List<UserLocationModel>>(
-                        it
-                    )
-                stateController.isLoadingRead.value = false
-                stateController.isSuccessRead.value = true
-                stateController.isErrorRead.value = false
-            } catch (e: Exception) {
-                stateController.isLoadingRead.value  = false
-                stateController.isErrorRead.value = true
-                stateController.errorRead.value = e.message.toString()
-            }
-        }
-    }
-
-//    private fun read() {
-//
-//        error.value = ""
-//        isLoading.value = true
-//        val text = buildJsonObject {
-//            put("inputLoginToken", login.getLoginTokenWithDate().token)
-//        }
-//        val encryptedUserData =
-//            requestServer.encryptData(MyJson.MyJson.encodeToString(text), login.getServerKey())
-//        val data2 = (encryptedUserData)
-//
-//        val data3 = buildJsonObject {
-//            put("tag", "read")
-//            put("orderBy", "name")
-//            put("orderType", "ASC")
-//            put("from", 0)
-//
-//        }
-//
-//        val body1 = MultipartBody.Builder().setType(MultipartBody.FORM)
-//            .addFormDataPart("data1", requestServer.getData1().toString())
-//            .addFormDataPart("data2", data2)
-//            .addFormDataPart("data3", data3.toString())
-//            .build()
-//
-//        Log.e("data2", requestServer.getData2().toString())
-//        Log.e("data3", data3.toString())
-//        GlobalScope.launch {
-//            requestServer.request2(body1, Urls.userLocationUrl, { code, it ->
-//                isLoading.value = false
-//                isError.value = true
-//                error.value = it
-//            }) {
-//                try {
-//
-//                    val categories =
-//                        MyJson.IgnoreUnknownKeys.decodeFromString<List<UserLocationModel>>(
-//                            it
-//                        )
-//                    this@UserLocationsActivity.userLocations.value = categories
-////                            if (categories.size >= 3) isHaveReadMore.value = true
-//                    isLoading.value = false
-//                    isSuccess.value = true
-//                    Log.e("listt", categories.toString())
-//
-//
-//                } catch (e: Exception) {
-//                    isLoading.value = false
-//                    isError.value = true
-//                    error.value = e.message.toString()
-//
-//                }
-//            }
-//        }
-//    }
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -246,6 +160,29 @@ class UserLocationsActivity :
         ) {
             Text(text = label, fontSize = 12.sp)
             Text(text = value, fontSize = 12.sp)
+        }
+    }
+
+    private fun read() {
+        stateController.isLoadingRead.value = true
+        var data3 =   buildJsonObject {
+            put("tag", "read")
+        }
+        val body1 = MultipartBody.Builder().setType(MultipartBody.FORM)
+            .addFormDataPart("data1", requestServer.getData1().toString())
+            .addFormDataPart("data2", requestServer.getData2())
+            .addFormDataPart("data3", data3.toString())
+            .build()
+
+        requestServer.request2(body1, Urls.userLocationUrl,{ code, it->
+            stateController.errorStateRead(it)
+        }){
+            userLocations.value =
+                MyJson.IgnoreUnknownKeys.decodeFromString<List<UserLocationModel>>(
+                    it
+                )
+            stateController.successState()
+
         }
     }
 }

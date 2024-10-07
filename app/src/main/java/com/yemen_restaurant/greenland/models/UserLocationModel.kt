@@ -11,6 +11,7 @@ data class UserLocationModel (
     val latLong : String,
     val nearTo: String,
     val contactPhone: String,
+    var deliveryPrice:Double,
     val createdAt: String,
     val updatedAt: String,
 )

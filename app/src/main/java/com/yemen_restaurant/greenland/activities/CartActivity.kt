@@ -51,6 +51,7 @@ import androidx.compose.ui.window.Dialog
 import com.yemen_restaurant.greenland.MainCompose2
 import com.yemen_restaurant.greenland.R
 import com.yemen_restaurant.greenland.models.OrderProductWithQntModel
+import com.yemen_restaurant.greenland.models.SuccessIntModel
 import com.yemen_restaurant.greenland.models.UserLocationModel
 import com.yemen_restaurant.greenland.shared.MyJson
 import com.yemen_restaurant.greenland.shared.OfferInCart
@@ -64,26 +65,43 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.put
 import okhttp3.MultipartBody
+import java.time.Duration
+import java.time.LocalDateTime
+import kotlin.math.roundToInt
 
 class CartActivity : ComponentActivity() {
     private val stateController = StateController()
     private val requestServer = RequestServer(this)
-    private var locationModel = mutableStateOf("")
-    private lateinit var locationData: UserLocationModel
+private val locationData = mutableStateOf<UserLocationModel?>(null)
+
     val isShow = mutableStateOf(false)
     private var type = mutableStateOf(0)
-    lateinit var productInCart : ProductInCart
-    lateinit var offerInCart: OfferInCart
+    private lateinit var productInCart : ProductInCart
+    private lateinit var offerInCart: OfferInCart
     private val cart = cartController3
+    val userStorage = UserStorage()
+    private val finalPrice =
+        mutableStateOf(
+            0
+        )
+    private val deliveryPrice =
+        mutableStateOf<Double?>(
+            null
+        )
 
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val userStorage = UserStorage()
+
         if ( userStorage.isSetUserLocation()){
-            locationModel.value = "12345"
-            locationData = userStorage.getUserLocation()
+            locationData.value = userStorage.getUserLocation()
+            deliveryPrice.value = locationData.value!!.deliveryPrice
+            val diff = Duration.between(userStorage.getDateLocation(), getCurrentDate()).toMinutes()
+            if (diff>1){
+                readDeliveryPrice()
+            }
         }
+        addDeliveryPriceToFinalPrice()
         setContent {
             GreenlandRestaurantTheme {
                 MainCompose2(padding = 0.dp, stateController = stateController, activity = this) {
@@ -119,6 +137,7 @@ class CartActivity : ComponentActivity() {
                                             ) {
                                                 IconButton(onClick = {
                                                     cartController3.incrementProductQuantity(productInCart.productsModel.id)
+                                                    addDeliveryPriceToFinalPrice()
                                                 }) {
                                                     Icon(
                                                         imageVector = Icons.Outlined.Add,
@@ -127,9 +146,8 @@ class CartActivity : ComponentActivity() {
                                                 }
                                                 Text(text = productInCart.productCount.value.toString())
                                                 IconButton(onClick = {
-
-
                                                     cartController3.decrementProductQuantity(productInCart.productsModel.id)
+                                                    addDeliveryPriceToFinalPrice()
                                                 }) {
                                                     Icon(
                                                         painter = painterResource(
@@ -144,6 +162,8 @@ class CartActivity : ComponentActivity() {
 
                                             IconButton(onClick = {
                                                 cartController3.removeProduct(productInCart.productsModel.id)
+                                                addDeliveryPriceToFinalPrice()
+                                                isShow.value = false
                                             }) {
                                                 Icon(
                                                     imageVector = Icons.Outlined.Delete,
@@ -167,6 +187,7 @@ class CartActivity : ComponentActivity() {
                                                 ){
                                                     IconButton(onClick = {
                                                         cartController3.incrementOfferQuantity(offerInCart.offerModel.id)
+                                                        addDeliveryPriceToFinalPrice()
                                                     }) {
                                                         Icon(
                                                             imageVector = Icons.Outlined.Add,
@@ -178,6 +199,7 @@ class CartActivity : ComponentActivity() {
 
 
                                                         cartController3.decrementOfferQuantity(offerInCart.offerModel.id)
+                                                        addDeliveryPriceToFinalPrice()
                                                     }) {
                                                         Icon(
                                                             painter = painterResource(
@@ -191,9 +213,9 @@ class CartActivity : ComponentActivity() {
                                                 }
 
                                                 IconButton(onClick = {
-
-
                                                     cartController3.removeOffer(productInCart.productsModel.id)
+                                                    addDeliveryPriceToFinalPrice()
+                                                    isShow.value = false
                                                 }) {
                                                     Icon(
                                                         imageVector = Icons.Outlined.Delete,
@@ -211,6 +233,18 @@ class CartActivity : ComponentActivity() {
         }
     }
 
+    private fun addDeliveryPriceToFinalPrice() {
+
+            if (deliveryPrice.value != null){
+                finalPrice.value =   cartController3.getFinalPrice()
+                    .roundToInt() + deliveryPrice.value!!.toInt()
+            }
+        else{
+                finalPrice.value =   cartController3.getFinalPrice()
+                    .roundToInt()
+            }
+    }
+
     @Composable
     private fun CartScreen() {
         Card(
@@ -224,6 +258,9 @@ class CartActivity : ComponentActivity() {
                     .padding(16.dp)
                     .fillMaxWidth()
             ) {
+
+
+
                 // Total Price Display
                 Row(
                     modifier = Modifier
@@ -232,25 +269,80 @@ class CartActivity : ComponentActivity() {
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = "الاجمالي",
-                        fontSize = 20.sp,
+                        text = "اجمالي الاصناف: ",
+                        fontSize = 18.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "${cartController3.getFinalPrice()}",
-                        style = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                        text = roundToNearestFifty(formatPrice(cartController3.getFinalPrice().roundToInt().toString()).toInt()).toString(),
+                        style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold)
                     )
+                }
+                if (locationData.value != null){
+                    HorizontalDivider()
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "سعر التوصيل",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        if (deliveryPrice.value != null)
+                        Text(
+                            text = formatPrice(deliveryPrice.value.toString()).toString(),
+                            style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        )
+                        else{
+                            Card (
+                                Modifier
+                                    .clickable {
+                                       readDeliveryPrice()
+                                    },
+                            ){
+                                Box (
+                                    Modifier
+                                        .background(MaterialTheme.colorScheme.primary)){
+                                    Text(
+                                        modifier = Modifier.padding(1.dp),
+
+                                        text = "عرض سعر التوصيل",
+                                        fontSize = 12.sp,
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+
+                            }
+
+                        }
+                    }
+                    HorizontalDivider()
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "المبلغ المتوجب دفعه: ",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = finalPrice.value.toString(),
+                            style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        )
+                    }
+
                 }
 
                 HorizontalDivider(Modifier.padding(10.dp))
-                Text(
-                    text = "يتم احتساب سعر التوصيل بعد تأكيد الطلب", // Replace with actual location data
-                    style = TextStyle(fontSize = 12.sp),
-                    color = Color.Red,
-                    modifier = Modifier
-                        .padding(bottom = 5.dp)
-                )
-                if (locationModel.value.isEmpty()){
+
+                if (locationData.value == null){
                     Button(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -295,39 +387,37 @@ class CartActivity : ComponentActivity() {
 
         HorizontalDivider()
         LazyColumn(content = {
-            if (locationModel.value.isNotEmpty())
+            if (locationData.value != null)
                 item {
                     CardView(title = "موقع التوصيل") {
                         Text(
-                            text = locationData.street, // Replace with actual location data
+                            text = locationData.value!!.street, // Replace with actual location data
                             style = TextStyle(fontSize = 16.sp),
                             modifier = Modifier.padding(bottom = 5.dp)
                         )
                         Text(
-                            text = locationData.nearTo, // Replace with actual location data
+                            text = locationData.value!!.nearTo, // Replace with actual location data
                             style = TextStyle(fontSize = 16.sp),
                             modifier = Modifier.padding(bottom = 5.dp)
                         )
                         Text(
-                            text = locationData.contactPhone, // Replace with actual location data
+                            text = locationData.value!!.contactPhone, // Replace with actual location data
                             style = TextStyle(fontSize = 16.sp),
                             modifier = Modifier.padding(bottom = 5.dp)
                         )
                         Card (
                             Modifier
-                                .background(Color.White)
+
                                 .clickable { chooseLocation() },
                         ){
                             Box (
                                 Modifier
-                                    .fillMaxSize()
-                                    .background(Color.White)){
+                                    .fillMaxSize().background(MaterialTheme.colorScheme.primary)){
                                 Text(
                                     modifier = Modifier.padding(1.dp),
-
                                     text = "تغيير العنوان",
                                     fontSize = 12.sp,
-                                    color = Color.Blue,
+                                    color = Color.White,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
@@ -408,7 +498,7 @@ class CartActivity : ComponentActivity() {
 
                     Card (
                         Modifier
-                            .background(Color.White)
+
                             .clickable {
                                 intentFunWhatsapp()
                             },
@@ -416,13 +506,13 @@ class CartActivity : ComponentActivity() {
                         Box (
                             Modifier
                                 .fillMaxSize()
-                                .background(Color.White)){
+                                .background(MaterialTheme.colorScheme.primary)){
                             Text(
                                 modifier = Modifier.padding(1.dp),
 
                                 text = "الدفع الالكتروني؟ تواصل معنا",
                                 fontSize = 12.sp,
-                                color = Color.Blue,
+                                color = Color.White,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -474,10 +564,10 @@ class CartActivity : ComponentActivity() {
                         weight = column2Weight
                     )
                     TableCell(
-                        text = s.productsModel.postPrice, weight = column3Weight
+                        text = formatPrice(s.productsModel.postPrice) , weight = column3Weight
                     )
                     TableCell(
-                        text = (s.productsModel.postPrice.toInt() * s.productCount.value.toInt()).toString(),
+                        text = formatPrice ((s.productsModel.postPrice.toDouble() * s.productCount.value).toString()),
                         weight = column4Weight
                     )
 
@@ -504,13 +594,12 @@ class CartActivity : ComponentActivity() {
                         weight = column2Weight
                     )
                     TableCell(
-                        text = s.offerModel.price, weight = column3Weight
+                        text = formatPrice(s.offerModel.price) , weight = column3Weight
                     )
                     TableCell(
-                        text = (s.offerModel.price.toInt() * s.offerCount.value.toInt()).toString(),
+                        text = formatPrice((s.offerModel.price.toDouble() * s.offerCount.value).toString()),
                         weight = column4Weight
                     )
-
                 }
             }
         }
@@ -558,7 +647,7 @@ class CartActivity : ComponentActivity() {
     }
 
     private fun confirmOrder() {
-        stateController.isLoadingAUD.value = true
+        stateController.startAud()
 
         val orderProducts = arrayListOf<OrderProductWithQntModel>()
         val orderOffers = arrayListOf<OrderProductWithQntModel>()
@@ -582,7 +671,7 @@ class CartActivity : ComponentActivity() {
             put("tag", "add")
             put("inputOrderProductsIdsWithQnt", MyJson.MyJson.encodeToJsonElement(orderProducts))
             put("inputOrderOffersIdsWithQnt", MyJson.MyJson.encodeToJsonElement(orderOffers))
-            put("inputUserLocationId", locationData.id)
+            put("inputUserLocationId", locationData.value!!.id)
         }
 
 
@@ -596,12 +685,9 @@ class CartActivity : ComponentActivity() {
 
 
         requestServer.request2(body, Urls.ordersUrl, { code, it ->
-            stateController.isLoadingAUD.value = false
-            stateController.isErrorAUD.value = true
-            stateController.errorAUD.value = it
+            stateController.errorStateAUD(it)
         }) {
-            stateController.isLoadingAUD.value = false
-
+            stateController.successState()
             val intent = Intent(
                 this@CartActivity, OrdersProductsActivity::class.java
             )
@@ -621,8 +707,9 @@ class CartActivity : ComponentActivity() {
             if (data != null) {
                 val location = data.getStringExtra("location")
                 if (location != null) {
-                    locationModel.value = (location)
-                    locationData = MyJson.IgnoreUnknownKeys.decodeFromString(location)
+                    locationData.value = MyJson.IgnoreUnknownKeys.decodeFromString(location)
+                    deliveryPrice.value = locationData.value!!.deliveryPrice
+                    addDeliveryPriceToFinalPrice()
                 }
             }
         }
@@ -681,4 +768,31 @@ class CartActivity : ComponentActivity() {
             return false
         }
     }
+    private fun readDeliveryPrice() {
+        stateController.startAud()
+        val data3 = buildJsonObject {
+            put("tag", "readDeliveryPrice")
+            put( "inputUserLocationId",locationData.value!!.id)
+        }
+
+        val body1 = MultipartBody.Builder().setType(MultipartBody.FORM)
+            .addFormDataPart("data3", data3.toString())
+            .build()
+
+        requestServer.request2(body1, Urls.userLocationUrl, { code, it ->
+          stateController.errorStateAUD(it)
+           deliveryPrice.value = null
+            addDeliveryPriceToFinalPrice()
+        }) {
+            val price = MyJson.IgnoreUnknownKeys.decodeFromString<SuccessIntModel>(it)
+               deliveryPrice.value = price.success.toDouble()
+            addDeliveryPriceToFinalPrice()
+            userStorage.setDateLocation()
+            stateController.successStateAUD()
+        }
+    }
+}
+
+fun getCurrentDate(): LocalDateTime {
+    return LocalDateTime.now()
 }

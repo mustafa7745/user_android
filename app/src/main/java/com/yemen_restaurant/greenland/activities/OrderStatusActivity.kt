@@ -43,7 +43,7 @@ class OrderStatusActivity : ComponentActivity() {
     val requestServer = RequestServer(this)
     private lateinit var orderId: String
     private fun read() {
-        stateController.isLoadingRead.value = true
+        stateController.startRead()
         val data3 = buildJsonObject {
             put("tag", "readOrderStatus")
             put("inputOrderId", orderId)
@@ -55,23 +55,13 @@ class OrderStatusActivity : ComponentActivity() {
             .build()
 
         requestServer.request2(body1, Urls.ordersUrl, { _, it ->
-            stateController.isLoadingRead.value = false
-            stateController.isErrorRead.value = true
-            stateController.errorRead.value = it
+            stateController.errorStateRead(it)
         }) {
-            try {
                 orderStatus.value =
                     MyJson.IgnoreUnknownKeys.decodeFromString(
                         it
                     )
-                stateController.isLoadingRead.value = false
-                stateController.isSuccessRead.value = true
-                stateController.isErrorRead.value = false
-            } catch (e: Exception) {
-                stateController.isLoadingRead.value = false
-                stateController.isErrorRead.value = true
-                stateController.errorRead.value = e.message.toString()
-            }
+               stateController.successState()
         }
     }
 

@@ -66,6 +66,7 @@ import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.yemen_restaurant.greenland.CustomImageView
 import com.yemen_restaurant.greenland.LoadingCompose
+import com.yemen_restaurant.greenland.MainCompose1
 import com.yemen_restaurant.greenland.R
 import com.yemen_restaurant.greenland.models.HomeComponent
 import com.yemen_restaurant.greenland.models.User
@@ -89,11 +90,10 @@ import java.time.LocalDateTime
 val cartController3 = CartController3()
 
 class DashboardActivity : ComponentActivity() {
-    lateinit var homeComponent: HomeComponent
+    private lateinit var homeComponent: HomeComponent
     val stateController = StateController()
-    val currenctDate: LocalDateTime = LocalDateTime.now()
-    val homeComponentStorage = HomeComponentStorage()
-    val userName = mutableStateOf("")
+    private val homeComponentStorage = HomeComponentStorage()
+    private val userName = mutableStateOf("")
     val userStorage = UserStorage()
 
     val itemView = mutableStateOf(false)
@@ -107,51 +107,32 @@ class DashboardActivity : ComponentActivity() {
 
     private fun read() {
 
-        stateController.errorRead.value = ""
-        stateController.isLoadingRead.value = true
+        stateController.startRead()
+
         var data3: JsonObject
-
-//        val userName = GetStorage("user").getData("name")
-
+        var body1 = MultipartBody.Builder().setType(MultipartBody.FORM)
         if (userStorage.isSetUser()) {
             data3 = buildJsonObject {
                 put("tag", "read")
             }
 
-//            val tokenInfo = requestServer.login.getLoginTokenWithDate();
-//            Log.e("dateee", tokenInfo.expire_at)
-//            val tokenDateExpireAt =
-//                (LocalDateTime.parse(tokenInfo.expire_at.replace("\\s".toRegex(), "T")))
-//            data3 = if (tokenDateExpireAt.isBefore(LocalDateTime.now())) {
-//                buildJsonObject {
-//                    put("tag", "read")
-//                }
-//            } else {
-//                buildJsonObject {
-//                    put("tag", "readWithUser")
-//                }
-//            }
         } else {
-
+            body1.addFormDataPart("data1", requestServer.getData1().toString())
+            .addFormDataPart("data2", requestServer.getData2())
             data3 = buildJsonObject {
                 put("tag", "readWithUser2")
             }
+
         }
-        val body1 = MultipartBody.Builder().setType(MultipartBody.FORM)
-            .addFormDataPart("data1", requestServer.getData1().toString())
-            .addFormDataPart("data2", requestServer.getData2())
-            .addFormDataPart("data3", data3.toString())
-            .build()
 
-        requestServer.request2(body1, Urls.homeUrl, { code, it ->
-            stateController.isLoadingRead.value = false
-            stateController.isErrorRead.value = true
-            stateController.errorRead.value = it
+
+        body1.addFormDataPart("data3", data3.toString()).build()
+
+        val requestBody = body1.build()
+        requestServer.request2(requestBody, Urls.homeUrl, { code, it ->
+           stateController.errorStateRead(it)
         }) {
-            try {
-
                 val data = MyJson.IgnoreUnknownKeys.decodeFromString<HomeComponent>(it)
-                Log.e("data",it.toString())
                 if (data.user != null) {
                     userStorage.setUser(MyJson.IgnoreUnknownKeys.encodeToString(data.user))
                 }else{
@@ -159,28 +140,18 @@ class DashboardActivity : ComponentActivity() {
                 }
                 homeComponent = data
                 homeComponentStorage.setHomeComponent(MyJson.IgnoreUnknownKeys.encodeToString(data))
-
-
-                successState()
-
+                stateController.successState()
                 if (homeComponent.user!!.name2 == null){
                     goToAddName()
                 }
-
-
-            } catch (e: Exception) {
-                stateController.isLoadingRead.value = false
-                stateController.isErrorRead.value = true
-                stateController.errorRead.value = e.message.toString()
-            }
         }
     }
 
-    private fun successState() {
-        stateController.isLoadingRead.value = false
-        stateController.isSuccessRead.value = true
-        stateController.isErrorRead.value = false
-    }
+//    private fun successState() {
+//        stateController.isLoadingRead.value = false
+//        stateController.isSuccessRead.value = true
+//        stateController.isErrorRead.value = false
+//    }
 
 
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -204,28 +175,11 @@ class DashboardActivity : ComponentActivity() {
 
             }
         }
-
-
-
-        if (homeComponentStorage.isSetHomeComponent()){
-            val diff = Duration.between(homeComponentStorage.getDate(),currenctDate).toMinutes()
-            if (diff>1){
-                read()
-            }
-            else{
-                homeComponent = homeComponentStorage.getHomeComponent()
-                successState()
-            }
-        }else{
-            read()
-        }
-
-
+        checkIfNeedUpdate()
         setContent {
             GreenlandRestaurantTheme {
                 val navController = rememberNavController()
-                val topBarHeight = 70.dp
-                // A surface container using the 'background' color from the theme
+
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
                     topBar = {
@@ -236,20 +190,28 @@ class DashboardActivity : ComponentActivity() {
 
                         NavHost(navController = navController, startDestination = "home") {
                             composable("home") {
-                                MainCompose {
+                                MainCompose1(padding = 0.dp, stateController = stateController, activity = this@DashboardActivity, read = { read() }){
                                     CategoriesComponent()
                                 }
-                            }
-                            composable("settings") {
-                                SettingsCompose()
-                            }
-                            composable("cart") {
-                                CartCompose()
                             }
                         }
                     },
                 )
             }
+        }
+    }
+
+    private fun checkIfNeedUpdate() {
+        if (homeComponentStorage.isSetHomeComponent()) {
+            val diff = Duration.between(homeComponentStorage.getDate(), getCurrentDate()).toMinutes()
+            if (diff > 1) {
+                read()
+            } else {
+                homeComponent = homeComponentStorage.getHomeComponent()
+                stateController.successState()
+            }
+        } else {
+            read()
         }
     }
 
@@ -523,8 +485,6 @@ class DashboardActivity : ComponentActivity() {
                                     .border(1.dp, Color.Black,RoundedCornerShape(16.dp))
                                     .clip(RoundedCornerShape(16.dp))
                                     .clickable {
-
-                                        //                                                navHostController.navigate("products/${s.category_id}")
                                         val intent = Intent(
                                             this@DashboardActivity,
                                             ProductsActivity::class.java
@@ -539,39 +499,7 @@ class DashboardActivity : ComponentActivity() {
                                         .height(170.dp)
                                         .align(Alignment.TopCenter)
                                 ) {
-//                                    GlideImage(model= s.category_image_path + s.image,contentDescription = null,loading= Placeholder,)
-                                    //   AsyncImage(model = , contentDescription = )
                                     CustomImageView(context = this@DashboardActivity, imageUrl =s.category_image_path + s.image , okHttpClient = requestServer.createOkHttpClientWithCustomCert())
-
-//                                    SubcomposeAsyncImage(
-//                                        error = {
-//                                            Column(
-//                                                Modifier.fillMaxSize(),
-//                                                horizontalAlignment = Alignment.CenterHorizontally,
-//                                                verticalArrangement = Arrangement.Center
-//                                            ) {
-////                                                    IconButton(onClick = { /*TODO*/ }) {
-////                                                        Icon(painter = , contentDescription = )
-////                                                    }
-//                                                Text(text = "خطأ في التحميل")
-////                                                    Text(text = it.result.throwable.message.toString())
-//                                            }
-//                                        },
-//                                        loading = {
-//                                            Column(
-//                                                Modifier.fillMaxSize(),
-//                                                horizontalAlignment = Alignment.CenterHorizontally,
-//                                                verticalArrangement = Arrangement.Center
-//                                            ) {
-//                                                LoadingCompose()
-//                                            }
-//                                        },
-//                                        contentScale = ContentScale.Fit,
-//                                        modifier = Modifier
-//                                            .fillMaxSize(),
-//                                        model = s.category_image_path + s.image,
-//                                        contentDescription = "null",
-//                                    )
                                 }
 
                                 Box(
@@ -642,7 +570,7 @@ class DashboardActivity : ComponentActivity() {
                                 val formattedDateTime = item.expireAt.replace("\\s".toRegex(), "T")
                                 val date = (LocalDateTime.parse(formattedDateTime))
                                 val diff =
-                                    (Duration.between(currenctDate, date).toDays() + 1).toString()
+                                    (Duration.between(getCurrentDate(), date).toDays() + 1).toString()
                                 if (diff == "1") {
                                     Text(text = "ينتهي اليوم ", fontSize = 12.sp)
                                 } else {
@@ -735,15 +663,6 @@ class DashboardActivity : ComponentActivity() {
             })
     }
 
-    @Composable
-    private fun CartCompose() {
-        Text(text = "Cart")
-    }
-
-    @Composable
-    private fun SettingsCompose() {
-        Text(text = "Settings")
-    }
 
     @Composable
     private fun MainCompose(onSuccess: @Composable() (() -> Unit)) {

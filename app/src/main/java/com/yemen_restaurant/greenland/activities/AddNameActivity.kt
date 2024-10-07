@@ -100,9 +100,7 @@ class AddNameActivity : ComponentActivity() {
         }
     }
     private fun add() {
-        stateController.isErrorAUD.value = false
-        stateController.isLoadingAUD.value = true
-        stateController.errorAUD.value = ""
+        stateController.startAud()
         val data3 = buildJsonObject {
             put("tag", "updateName")
             put("inputUserName", name.value)
@@ -115,31 +113,17 @@ class AddNameActivity : ComponentActivity() {
 
         requestServer.request2(body1, Urls.usersUrl, { code, it ->
 
-            stateController.isLoadingAUD.value = false
-            stateController.isErrorAUD.value = true
-            stateController.errorAUD.value = it
+            stateController.errorStateAUD(it)
         }) {
-            try {
                 runOnUiThread {
                     Toast.makeText(this,"تمت الاضافه بنجاح", Toast.LENGTH_SHORT).show()
                 }
-                successStateAUD()
+                stateController.successStateAUD()
                 val data1 = Intent()
                 data1.putExtra("user2",it)
                 setResult(RESULT_OK,data1)
                 finish()
-            } catch (e: Exception) {
-                errorStateAUD(e.message.toString())
-            }
+
         }
-    }
-    private fun errorStateAUD(e:String) {
-        stateController.isLoadingAUD.value = false
-        stateController.isErrorAUD.value = true
-        stateController.errorAUD.value = e
-    }
-    private fun successStateAUD() {
-        stateController.isLoadingAUD.value = false
-        stateController.isErrorAUD.value = false
     }
 }

@@ -64,23 +64,13 @@ class OrdersActivity : ComponentActivity() {
             .build()
 
         requestServer.request2(body1, Urls.ordersUrl, { _, it ->
-            stateController.isLoadingRead.value = false
-            stateController.isErrorRead.value = true
-            stateController.errorRead.value = it
+            stateController.errorStateRead(it)
         }) {
-            try {
                 orders.value =
                     MyJson.IgnoreUnknownKeys.decodeFromString(
                         it
                     )
-                stateController.isLoadingRead.value = false
-                stateController.isSuccessRead.value = true
-                stateController.isErrorRead.value = false
-            } catch (e: Exception) {
-                stateController.isLoadingRead.value = false
-                stateController.isErrorRead.value = true
-                stateController.errorRead.value = e.message.toString()
-            }
+                stateController.successState()
         }
     }
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")

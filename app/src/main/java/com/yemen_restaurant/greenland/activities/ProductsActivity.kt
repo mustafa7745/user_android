@@ -30,6 +30,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.ShoppingCart
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardColors
@@ -49,6 +50,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -67,6 +69,7 @@ import com.yemen_restaurant.greenland.models.ProductUDModel
 import com.yemen_restaurant.greenland.shared.CartController3
 import com.yemen_restaurant.greenland.shared.Login
 import com.yemen_restaurant.greenland.shared.MyJson
+import com.yemen_restaurant.greenland.shared.ProductInCart
 import com.yemen_restaurant.greenland.shared.RequestServer
 import com.yemen_restaurant.greenland.shared.StateController
 import com.yemen_restaurant.greenland.shared.Urls
@@ -78,6 +81,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.put
 import okhttp3.MultipartBody
+import java.text.DecimalFormat
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -119,7 +123,7 @@ class ProductsActivity : ComponentActivity() {
                 }
                 else{
                     products.value = productsDB
-                    successState()
+                    stateController.successState()
                 }
 
             }
@@ -163,47 +167,26 @@ class ProductsActivity : ComponentActivity() {
 
 
     private fun read() {
-        stateController.isLoadingRead.value = true
+        stateController.startRead()
         var data3 = buildJsonObject {
             put("tag", "read")
             put("inputCategoryId", category_id)
         }
         val body1 = MultipartBody.Builder().setType(MultipartBody.FORM)
-            .addFormDataPart("data1", requestServer.getData1().toString())
-            .addFormDataPart("data2", requestServer.getData2())
             .addFormDataPart("data3", data3.toString())
             .build()
 
         requestServer.request2(body1, Urls.productsUrl, { code, it ->
-            stateController.isLoadingRead.value = false
-            stateController.isErrorRead.value = true
-            stateController.errorRead.value = it
+            stateController.errorStateRead(it)
         }) {
-            try {
-
-
-
-                lifecycleScope.launch {
-                    products.value = MyJson.IgnoreUnknownKeys.decodeFromString(it)
-                    products.value.forEach {
-                        productsStorage.addProduct(it)
-                    }
-                    successState()
+            lifecycleScope.launch {
+                products.value = MyJson.IgnoreUnknownKeys.decodeFromString(it)
+                products.value.forEach {
+                    productsStorage.addProduct(it)
                 }
-
-
-            } catch (e: Exception) {
-                stateController.isLoadingRead.value = false
-                stateController.isErrorRead.value = true
-                stateController.errorRead.value = e.message.toString()
+                stateController.successState()
             }
         }
-    }
-
-    private fun successState() {
-        stateController.isLoadingRead.value = false
-        stateController.isSuccessRead.value = true
-        stateController.isErrorRead.value = false
     }
 
 
@@ -241,11 +224,12 @@ class ProductsActivity : ComponentActivity() {
                         ) {
                             Text(
                                 modifier = Modifier.padding(2.dp),
+                                textAlign = TextAlign.Center,
                                 text = s.name,
-                                fontSize = 12.sp,
-                                color = Color.Blue,
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.primary,
                                 overflow = TextOverflow.Ellipsis,
-                                maxLines = 1
+                                maxLines = 2
                             )
                             HorizontalDivider()
                             Row(
@@ -256,7 +240,7 @@ class ProductsActivity : ComponentActivity() {
                                 horizontalArrangement = Arrangement.Center,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(text = s.postPrice + " ريال ", fontSize = 14.sp, color = Color.Black)
+                                Text(text = formatPrice(s.postPrice) + " ريال ", fontSize = 14.sp, color = Color.Black)
                                 if (s.products_groupsName != "الرئيسية")
                                 Column(
                                     Modifier
@@ -274,7 +258,7 @@ class ProductsActivity : ComponentActivity() {
                                         ){
                                             Box(modifier = Modifier
                                                 .fillMaxSize()
-                                                .background(Color.White)
+                                                .background(MaterialTheme.colorScheme.primary)
                                                 .clickable {
                                                     isShow.value = true
                                                     groupId = s.products_groupsId
@@ -282,6 +266,7 @@ class ProductsActivity : ComponentActivity() {
                                                 Text(
                                                     text = "الانواع",
                                                     fontSize = 12.sp,
+                                                    color = Color.White
                                                 )
                                             }
 
@@ -342,63 +327,7 @@ class ProductsActivity : ComponentActivity() {
                                 } else {
                                     val foundItem =
                                         cart.products.value.find { it.productsModel == s }
-                                    if (foundItem == null) {
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxSize()
-                                                .background(Color.White)
-                                                .clickable {
-                                                    cartController3.addProduct((s))
-                                                },
-                                            contentAlignment = Alignment.Center,
-                                        )
-
-                                        {
-                                            Text(text = "اضافة الى السلة", fontSize = 12.sp)
-                                        }
-                                    } else {
-                                        Row(
-                                            Modifier
-                                                .fillMaxWidth()
-                                                .background(Color.White),
-                                            horizontalArrangement = Arrangement.Center,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            IconButton(onClick = {
-                                                cartController3.incrementProductQuantity(s.id)
-                                            }) {
-                                                Icon(
-                                                    imageVector = Icons.Outlined.Add,
-                                                    contentDescription = ""
-                                                )
-                                            }
-                                            Text(text = foundItem.productCount.value.toString())
-                                            IconButton(onClick = {
-
-
-                                                cartController3.decrementProductQuantity(s.id)
-                                            }) {
-                                                Icon(
-                                                    painter = painterResource(
-                                                        R.drawable.baseline_remove_24
-                                                    ),
-                                                    contentDescription = ""
-                                                )
-
-                                                //                                                                            Icon(imageVector = R.drawable.ic_launcher_background, contentDescription = "" )
-                                            }
-                                            IconButton(onClick = {
-
-
-                                                cartController3.removeProduct(s.id)
-                                            }) {
-                                                Icon(
-                                                    imageVector = Icons.Outlined.Delete,
-                                                    contentDescription = ""
-                                                )
-                                            }
-                                        }
-                                    }
+                                    AddToCartUi(foundItem, s)
                                 }
                             }
 
@@ -445,6 +374,9 @@ class ProductsActivity : ComponentActivity() {
 
             })
     }
+
+
+
     @Composable
     @OptIn(ExperimentalFoundationApi::class)
     private fun modalList(
@@ -469,21 +401,7 @@ class ProductsActivity : ComponentActivity() {
 
                             ) {
                                 Column {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(30.dp)
-                                            .background(MaterialTheme.colorScheme.primary),
-                                    ) {
-                                        Row(
-                                            Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.Center,
-                                        ) {
-                                            Text(text = "السعر: ")
-                                            Text(text = s1.postPrice)
-
-                                        }
-                                    }
+                                    NamePriceModal(s1)
 
                                     val pagerState =
                                         rememberPagerState(pageCount = { s1.productImages.size })
@@ -580,69 +498,7 @@ class ProductsActivity : ComponentActivity() {
                                             } else {
                                                 val foundItem =
                                                     cart.products.value.find { it.productsModel == s1 }
-                                                if (foundItem == null) {
-                                                    Box(
-                                                        modifier = Modifier
-                                                            .fillMaxSize()
-                                                            .background(Color.White)
-                                                            .padding(5.dp)
-                                                            .clickable {
-                                                                cartController3.addProduct((s1))
-                                                            },
-                                                        contentAlignment = Alignment.Center,
-                                                    )
-
-                                                    {
-                                                        Text(
-                                                            text = "اضافة الى السلة",
-                                                            fontSize = 12.sp
-                                                        )
-                                                    }
-                                                } else {
-                                                    Row(
-                                                        Modifier.fillMaxWidth(),
-                                                        horizontalArrangement = Arrangement.Center,
-                                                        verticalAlignment = Alignment.CenterVertically
-                                                    ) {
-                                                        IconButton(onClick = {
-                                                            cartController3.incrementProductQuantity(
-                                                                s1.id
-                                                            )
-                                                        }) {
-                                                            Icon(
-                                                                imageVector = Icons.Outlined.Add,
-                                                                contentDescription = ""
-                                                            )
-                                                        }
-                                                        Text(text = foundItem.productCount.value.toString())
-                                                        IconButton(onClick = {
-
-
-                                                            cartController3.decrementProductQuantity(
-                                                                s1.id
-                                                            )
-                                                        }) {
-                                                            Icon(
-                                                                painter = painterResource(
-                                                                    R.drawable.baseline_remove_24
-                                                                ),
-                                                                contentDescription = ""
-                                                            )
-
-                                                            //                                                                            Icon(imageVector = R.drawable.ic_launcher_background, contentDescription = "" )
-                                                        }
-                                                        IconButton(onClick = {
-
-
-                                                            cartController3.removeProduct(s1.id)
-                                                        }) {
-                                                            Icon(
-                                                                imageVector = Icons.Outlined.Delete,
-                                                                contentDescription = ""
-                                                            )
-                                                        }
-                                                    }
-                                                }
+                                       AddToCartUi(foundItem = foundItem, s =s1 )
                                             }
 //                                            val foundItem = cart.products.value .find { it.productsModel == s1 }
 //                                            if (foundItem == null)
@@ -699,14 +555,6 @@ class ProductsActivity : ComponentActivity() {
 
                                         }
                                         HorizontalDivider(Modifier.padding(5.dp))
-                                        Text(
-                                            modifier = Modifier.padding(5.dp),
-                                            text = s1.name,
-                                            fontSize = 12.sp,
-                                            color = MaterialTheme.colorScheme.secondary,
-                                            overflow = TextOverflow.Ellipsis,
-                                            maxLines = 1
-                                        )
                                     }
                                 }
 
@@ -891,5 +739,128 @@ class ProductsActivity : ComponentActivity() {
 
         }
     }
+}
 
+fun formatPrice(price: String): String {
+    val doublePrice = price.toDouble()
+    val decimalFormat = DecimalFormat("#.##") // Format to two decimal places
+    return decimalFormat.format(doublePrice)
+}
+
+@Composable
+fun NamePriceModal(s1: ProductModel) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(30.dp)
+            .background(MaterialTheme.colorScheme.primary)
+    ) {
+        Column(
+            Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                modifier = Modifier.padding(5.dp),
+                text = s1.name,
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.secondary,
+                overflow = TextOverflow.Ellipsis,
+                maxLines = 2
+            )
+        }
+    }
+
+    HorizontalDivider()
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(30.dp)
+            .background(MaterialTheme.colorScheme.primary),
+    ) {
+
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+        ) {
+            Text(text = "السعر: ", color = Color.White)
+            Text(text = formatPrice(s1.postPrice), color = Color.White)
+
+        }
+    }
+}
+@Composable
+fun AddToCartUi(
+    foundItem: ProductInCart?,
+    s: ProductModel
+) {
+    if (foundItem == null) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.White)
+                .clickable {
+                    cartController3.addProduct((s))
+                },
+            contentAlignment = Alignment.Center,
+        )
+
+        {
+            Row(
+                Modifier.fillMaxSize(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(text = "اضافة الى السلة", fontSize = 12.sp)
+                Icon(
+                    imageVector = Icons.Outlined.ShoppingCart,
+                    contentDescription = "",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+
+        }
+    } else {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .background(Color.White),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = {
+                cartController3.incrementProductQuantity(s.id)
+            }) {
+                Icon(
+                    imageVector = Icons.Outlined.Add,
+                    contentDescription = ""
+                )
+            }
+            Text(text = foundItem.productCount.value.toString())
+            IconButton(onClick = {
+
+
+                cartController3.decrementProductQuantity(s.id)
+            }) {
+                Icon(
+                    painter = painterResource(
+                        R.drawable.baseline_remove_24
+                    ),
+                    contentDescription = ""
+                )
+
+                //                                                                            Icon(imageVector = R.drawable.ic_launcher_background, contentDescription = "" )
+            }
+            IconButton(onClick = {
+
+
+                cartController3.removeProduct(s.id)
+            }) {
+                Icon(
+                    imageVector = Icons.Outlined.Delete,
+                    contentDescription = "",
+                    tint = Color.Red
+                )
+            }
+        }
+    }
 }

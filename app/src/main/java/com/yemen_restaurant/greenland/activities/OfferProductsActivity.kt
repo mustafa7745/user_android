@@ -2,7 +2,6 @@ package com.yemen_restaurant.greenland.activities
 
 import android.annotation.SuppressLint
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -28,7 +27,6 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.Icon
@@ -43,12 +41,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
 import coil.compose.AsyncImage
-import com.yemen_restaurant.greenland.LoadingCompose
+import com.yemen_restaurant.greenland.MainCompose1
 import com.yemen_restaurant.greenland.R
 import com.yemen_restaurant.greenland.models.OfferModel
 import com.yemen_restaurant.greenland.models.OfferProductsModel
@@ -66,10 +62,8 @@ import okhttp3.MultipartBody
 class OfferProductsActivity : ComponentActivity() {
     private val offerProducts = mutableStateOf<List<OfferProductsModel>>(listOf())
     lateinit var offer: OfferModel
-//    val categories = mutableStateOf<List<OfferProductsModel>>(listOf())
     private val stateController = StateController()
     val requestServer = RequestServer(this)
-//    lateinit var offerId:String;
 
 
 
@@ -97,7 +91,7 @@ class OfferProductsActivity : ComponentActivity() {
                         cCompose.topBar(topBarHeight = topBarHeight, this)
                     },
                     content = {
-                        MainCompose (topBarHeight){
+                        MainCompose1(padding = 0.dp, stateController = stateController, activity = this, read = { read() }){
                             ProductsCompose()
                         }
                     },
@@ -291,8 +285,7 @@ class OfferProductsActivity : ComponentActivity() {
     }
 
     private fun read() {
-        stateController.errorRead.value = ""
-        stateController.isLoadingRead.value = true
+        stateController.startRead()
         val data3 : JsonObject = buildJsonObject {
             put("tag", "read")
             put("inputOfferId",offer.id)
@@ -303,61 +296,10 @@ class OfferProductsActivity : ComponentActivity() {
             .build()
 
         requestServer.request2(body1, Urls.offersProductsUrl,{ code, it->
-            stateController.isLoadingRead.value= false
-            stateController.isErrorRead.value = true
-            stateController.errorRead.value = it
+            stateController.errorStateRead(it)
         }){
-            try {
                 offerProducts.value =  MyJson.IgnoreUnknownKeys.decodeFromString(it)
-                stateController.isLoadingRead.value = false
-                stateController.isSuccessRead.value = true
-                stateController.isErrorRead.value = false
-            } catch (e: Exception) {
-                stateController.isLoadingRead.value  = false
-                stateController.isErrorRead.value = true
-                stateController.errorRead.value = e.message.toString()
-            }
+                stateController.successState()
         }
     }
-    @Composable
-    private fun MainCompose(padding: Dp,onSuccess: @Composable() (() -> Unit)){
-        Column(
-            modifier= Modifier.fillMaxSize().padding(top = padding),
-            verticalArrangement= Arrangement.Top,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            if (stateController.isLoadingAUD.value){
-                Dialog(onDismissRequest = { /*TODO*/ }) {
-                    Column(
-                        modifier= Modifier.fillMaxSize(),
-                        verticalArrangement= Arrangement.Center,
-                        horizontalAlignment = Alignment.Start
-                    ){
-                        LoadingCompose()
-                    }
-                }
-            }
-            if (stateController.isErrorAUD.value){
-                Toast.makeText(this@OfferProductsActivity,stateController.errorAUD.value, Toast.LENGTH_SHORT).show()
-            }
-            if (stateController.isSuccessRead.value){
-                onSuccess()
-            }
-            if (stateController.isLoadingRead.value){
-                LoadingCompose()
-            }
-            if (stateController.isErrorRead.value) {
-                Text(text = stateController.errorRead.value)
-                Button(onClick = {
-                    read()
-
-                }
-                ) {
-                    Text(text = "retry")
-                }
-            }
-        }
-    }
-
-
 }

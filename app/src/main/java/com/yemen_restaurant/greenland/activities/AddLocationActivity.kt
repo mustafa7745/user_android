@@ -7,7 +7,6 @@ import android.content.IntentSender
 import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationManager
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -15,7 +14,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -25,8 +23,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -44,10 +46,10 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.core.app.ActivityCompat
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LastLocationRequest
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
@@ -58,6 +60,7 @@ import com.google.android.gms.location.SettingsClient
 import com.google.android.gms.tasks.Task
 import com.yemen_restaurant.greenland.MainCompose2
 import com.yemen_restaurant.greenland.R
+import com.yemen_restaurant.greenland.models.LocationTypeModel
 import com.yemen_restaurant.greenland.models.UserLocationModel
 import com.yemen_restaurant.greenland.shared.MyJson
 import com.yemen_restaurant.greenland.shared.RequestServer
@@ -73,6 +76,9 @@ import okhttp3.MultipartBody
 class AddLocationActivity : ComponentActivity() {
     val stateController = StateController()
     private val requestServer = RequestServer(this)
+    val openDialog =  mutableStateOf(false)
+     var locationTypes = mutableStateOf<List<LocationTypeModel>>(listOf())
+    val selectedLocationType =   mutableStateOf<LocationTypeModel?>(null)
 
     val permissions = arrayOf(
         android.Manifest.permission.ACCESS_FINE_LOCATION,
@@ -96,10 +102,13 @@ private fun add() {
     val data3 = buildJsonObject {
         put("tag", "add")
         put("inputUserLocationCity", "صنعاء")
-        put("inputUserLocationStreet", street.value)
-        put("inputUserLocationLatLong", lat.value +","+ long.value)
-        put("inputUserLocationNearTo", nearto.value)
-        put("inputUserLocationContactPhone", contact.value)
+        put("inputUserLocationStreet", street.value.trim())
+        put("inputUserLocationLatLong", (lat.value +","+ long.value).trim())
+        put("inputUserLocationNearTo", nearto.value.trim())
+        put("inputUserLocationContactPhone", contact.value.trim())
+        if (selectedLocationType.value != null) {
+            put("inputLocationTypeId", selectedLocationType.value!!.id)
+        }
     }
     val body1 = MultipartBody.Builder().setType(MultipartBody.FORM)
         .addFormDataPart("data1", requestServer.getData1().toString())
@@ -108,13 +117,9 @@ private fun add() {
         .build()
 
     requestServer.request2(body1, Urls.userLocationUrl, { code, it ->
-
-        stateController.isLoadingAUD.value = false
-        stateController.isErrorAUD.value = true
-        stateController.errorAUD.value = it
+        stateController.errorStateAUD(it)
     }) {
-        try {
-            stateController.isLoadingAUD.value = false
+            stateController.successStateAUD()
             MyJson.IgnoreUnknownKeys.decodeFromString<UserLocationModel>(it)
             runOnUiThread {
                 Toast.makeText(this@AddLocationActivity,"تمت الاضافه بنجاح",Toast.LENGTH_SHORT).show()
@@ -123,28 +128,42 @@ private fun add() {
             data1.putExtra("location",it)
             setResult(RESULT_OK,data1)
             finish()
-        } catch (e: Exception) {
-            stateController.isLoadingAUD.value = false
-            stateController.isErrorAUD.value = true
-            stateController.errorAUD.value = e.message.toString()
+    }
+}
+    private fun readLocationTypes() {
+        stateController.startAud()
+        val data3 = buildJsonObject {
+            put("tag", "read")
+        }
+        val body1 = MultipartBody.Builder().setType(MultipartBody.FORM)
+            .addFormDataPart("data3", data3.toString())
+            .build()
+
+        requestServer.request2(body1, Urls.locationTypesUrl, { code, it ->
+
+            stateController.errorStateAUD(it)
+        }) {
+                stateController.successStateAUD()
+                locationTypes.value =
+                    MyJson.IgnoreUnknownKeys.decodeFromString(
+                        it
+                    )
+                openDialog.value = true
 
         }
+
+
     }
-
-
-}
     val isGpsEnabled = mutableStateOf(false)
     val isGetLastLocation = mutableStateOf(false)
     val isPermissionAllow = mutableStateOf(false)
 
-    @RequiresApi(Build.VERSION_CODES.M)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         checkIsPermissionGranted()
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
         val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
         isGpsEnabled.value = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
-        val lastLocationRequest = LastLocationRequest.Builder();
 
 
         setContent {
@@ -209,12 +228,14 @@ private fun add() {
         }
     }
 
+    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun ContentAdd() {
         val userStorage = UserStorage()
         contact.value = userStorage.getUser().phone
         val fontSize = 10.sp
 
+        DialogTypes()
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -229,9 +250,11 @@ private fun add() {
                 style = TextStyle(
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF6200EE)
+                    color = Color(0xFF6200EE),
+                    fontFamily =  FontFamily(
+                        Font(R.font.bukra_bold)))
                 )
-            )
+
 
 
 
@@ -295,6 +318,24 @@ private fun add() {
                     modifier = Modifier.padding(start = 10.dp)
                 )
             }
+            Button(
+                onClick = {
+                    if (locationTypes.value.isEmpty())
+                    readLocationTypes()
+                    else
+                        openDialog.value=true
+
+                          },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text(
+                    text = selectedLocationType.value?.name ?: "نوع العنوان",
+                color = Color.White, fontSize = 18.sp,fontFamily = FontFamily(
+                    Font(R.font.bukra_bold)))
+            }
             OutlinedTextField(
                 value = contact.value,
                 onValueChange = {
@@ -306,6 +347,7 @@ private fun add() {
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
             )
+
 
 
 
@@ -448,6 +490,39 @@ private fun add() {
 
         } else {
             // Permission denied, handle accordingly (e.g., show an explanation or disable the feature)
+        }
+    }
+
+    @Composable
+    fun DialogTypes() {
+        if (openDialog.value) {
+            Dialog(
+                onDismissRequest = { openDialog.value = false },
+               content = {
+                   Card(Modifier.fillMaxWidth()) {
+                       Text(text = "نوع العنوان" ,Modifier.padding(10.dp))
+                       HorizontalDivider()
+                       LazyColumn(content = {
+                           itemsIndexed(locationTypes.value){ _, s ->
+                               Button(
+                                   onClick = {
+                                             selectedLocationType.value = s
+                                       openDialog.value = false
+                                             },
+                                   modifier = Modifier
+                                       .fillMaxWidth()
+                                       .height(50.dp)
+                                       .padding(5.dp),
+                                   shape = RoundedCornerShape(8.dp)
+                               ) {
+                                   Text(text = s.name, color = Color.White, fontSize = 18.sp,fontFamily = FontFamily(
+                                       Font(R.font.bukra_bold)))
+                               }
+                           }
+                       })
+                   }
+               }
+            )
         }
     }
 }

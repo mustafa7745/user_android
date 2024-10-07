@@ -27,6 +27,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.lifecycle.lifecycleScope
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import com.google.firebase.ktx.Firebase
@@ -42,6 +43,8 @@ import com.yemen_restaurant.greenland.shared.StateController
 import com.yemen_restaurant.greenland.shared.TokenVM
 import com.yemen_restaurant.greenland.shared.Urls
 import com.yemen_restaurant.greenland.ui.theme.GreenlandRestaurantTheme
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
@@ -58,10 +61,13 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         checkEnterTypeAndProcess()
+        lifecycleScope.launch {
+            delay(3000)
+
+        }
 
         setContent {
             GreenlandRestaurantTheme {
-
                 MainCompose1(
                     padding = 0.dp,
                     stateController = stateController,

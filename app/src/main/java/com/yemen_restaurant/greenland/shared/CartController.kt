@@ -9,7 +9,6 @@ import com.yemen_restaurant.greenland.models.OrderContentModel
 import com.yemen_restaurant.greenland.models.OrderContentOffersModel
 import com.yemen_restaurant.greenland.models.OrderContentProductsModel
 import com.yemen_restaurant.greenland.models.ProductModel
-import kotlinx.serialization.Serializable
 
 
 data class ProductInCart (
@@ -105,15 +104,15 @@ class CartController3{
     }
 
     // Method to calculate the total price of all products
-    fun calculateTotalProductPrice(): Int {
-        return products.value.sumOf { it.productsModel.postPrice.toInt() * it.productCount.value }
+    fun calculateTotalProductPrice(): Double {
+        return products.value.sumOf { it.productsModel.postPrice.toDouble() * it.productCount.value }
     }
 
     // Method to calculate the total price of all offers
-    fun calculateTotalOfferPrice(): Int {
-        return offers.value.sumOf {  (it.offerModel.price.toInt() * it.offerCount.value) }
+    fun calculateTotalOfferPrice(): Double {
+        return offers.value.sumOf {  (it.offerModel.price.toDouble() * it.offerCount.value) }
     }
-    fun getFinalPrice(): Int {
+    fun getFinalPrice(): Double {
         return calculateTotalOfferPrice() + calculateTotalProductPrice()
     }
 
